@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Customer Dashboard – Remote Repair Centre{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col">
+        <h2>Customer Dashboard</h2>
+        <p class="lead">Welcome, {{ session.get('name', 'Customer') }}!</p>
+        <div class="card p-4">
+            <p>Your repair requests and order history will appear here.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
