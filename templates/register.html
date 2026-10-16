@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Register – Remote Repair Centre{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-5">
+        <div class="card p-4">
+            <h3 class="text-center mb-3">Create Account</h3>
+            <form method="POST" action="{{ url_for('register') }}" novalidate>
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="name" name="name"
+                           value="{{ name|default('') }}" placeholder="John Doe" required>
+                    <div class="form-text">Letters and spaces only, 2-100 characters.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="mobile" class="form-label">Mobile Number</label>
+                    <input type="tel" class="form-control" id="mobile" name="mobile"
+                           value="{{ mobile|default('') }}" placeholder="9876543210" required>
+                    <div class="form-text">Exactly 10 digits.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email"
+                           value="{{ email|default('') }}" placeholder="you@example.com" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="address" class="form-label">Address</label>
+                    <textarea class="form-control" id="address" name="address" rows="2"
+                              placeholder="Your full address" required>{{ address|default('') }}</textarea>
+                    <div class="form-text">5-500 characters.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Min 8 chars, upper+lower+digit+special" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Register</button>
+            </form>
+            <p class="text-center mt-3 mb-0">
+                Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
