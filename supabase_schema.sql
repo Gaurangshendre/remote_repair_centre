@@ -12,12 +12,20 @@ CREATE TABLE IF NOT EXISTS users (
     address     VARCHAR(500)    NOT NULL,
     password_hash TEXT          NOT NULL,
     role        VARCHAR(20)     NOT NULL DEFAULT 'customer'
-                CHECK (role IN ('customer', 'admin', 'delivery')),
+                CHECK (role IN ('customer', 'admin', 'delivery', 'shop')),
+    profile_data JSONB          NOT NULL DEFAULT '{}'::jsonb,
     created_at  TIMESTAMPTZ     NOT NULL DEFAULT now()
 );
 
 -- Index for fast login lookups
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_data JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Update the allowed roles when upgrading an existing database.
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check
+    CHECK (role IN ('customer', 'admin', 'delivery', 'shop'));
 
 -- =============================================================
 -- Row Level Security (RLS)
@@ -32,3 +40,4 @@ CREATE POLICY "Allow all for service role" ON users
     FOR ALL
     USING (true)
     WITH CHECK (true);
+

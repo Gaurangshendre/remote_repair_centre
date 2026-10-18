@@ -2,14 +2,41 @@
 {% block title %}Admin Dashboard – Remote Repair Centre{% endblock %}
 
 {% block content %}
-<div class="row mt-4">
-    <div class="col">
-        <h2>Admin Dashboard</h2>
-        <p class="lead">Welcome, {{ session.get('name', 'Admin') }}!</p>
-        <div class="card p-4">
-            <p>Manage users, repair requests, and system settings here.</p>
+<section class="dashboard-page" style="--role-accent: #b98a42;">
+    <header class="dashboard-heading">
+        <div>
+            <p class="eyebrow">CENTRE OPERATIONS</p>
+            <h1>Operations overview</h1>
+            <p>Welcome, {{ session.get('name', 'Admin') }}. Your centre workspace is ready.</p>
         </div>
-    </div>
-</div>
+        <span class="dashboard-role">Administrator</span>
+    </header>
+    <section class="workspace-panel" aria-labelledby="admin-queue-title">
+        <div class="workspace-panel-head">
+            <h2 id="admin-queue-title">Centre activity</h2>
+            <span class="panel-index">01 / OVERVIEW</span>
+        </div>
+        <div class="side-panel-content">
+            <div class="workspace-list" style="margin-top: 0;">
+                <article class="workspace-tile">
+                    <span>People</span>
+                    <h3>User directory</h3>
+                    <p>Registered customer, shop, and delivery accounts.</p>
+                </article>
+                <article class="workspace-tile">
+                    <span>Service</span>
+                    <h3>Repair queue</h3>
+                    <p>Repair requests and their current progress.</p>
+                </article>
+                <article class="workspace-tile">
+                    <span>Centre</span>
+                    <h3>System settings</h3>
+                    <p>Configuration for centre operations.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+    <p class="workspace-note">Operational tools will appear here as the centre workflows are connected.</p>
+</section>
 {% endblock %}
 

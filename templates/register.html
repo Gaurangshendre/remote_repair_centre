@@ -2,52 +2,294 @@
 {% block title %}Register – Remote Repair Centre{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-6 col-lg-5">
-        <div class="card p-4">
-            <h3 class="text-center mb-3">Create Account</h3>
+{% set profile_data = profile_data|default({}) %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+    .register-page {
+        --register-ink: #19312e;
+        --register-muted: #74827d;
+        --register-accent: #cf5b3c;
+        margin: 1.25rem auto 3rem;
+        max-width: 1080px;
+        color: var(--register-ink);
+        font-family: "DM Sans", sans-serif;
+    }
+    .register-layout {
+        display: grid;
+        grid-template-columns: minmax(250px, .78fr) minmax(0, 1.42fr);
+        overflow: hidden;
+        border: 1px solid #dce5df;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 18px 48px rgba(25, 50, 44, .11);
+    }
+    .register-aside {
+        position: relative;
+        display: flex;
+        min-height: 100%;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow: hidden;
+        padding: 2.4rem 2rem;
+        background-color: #173b37;
+        background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+        background-size: 30px 30px;
+        color: #f6f7f1;
+    }
+    .register-aside::after {
+        position: absolute;
+        right: -95px;
+        bottom: 100px;
+        width: 230px;
+        aspect-ratio: 1;
+        border: 1px solid rgba(240,196,139,.48);
+        border-radius: 50%;
+        box-shadow: 0 0 0 22px rgba(240,196,139,.05), 0 0 0 46px rgba(240,196,139,.035);
+        content: "";
+    }
+    .register-kicker {
+        color: #f0c48b;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+    }
+    .register-aside h1 {
+        max-width: 320px;
+        margin: 3rem 0 1rem;
+        font-family: "Manrope", sans-serif;
+        font-size: clamp(2rem, 3.5vw, 2.8rem);
+        font-weight: 800;
+        line-height: 1.08;
+    }
+    .register-aside p { max-width: 290px; color: #c5d4ce; line-height: 1.7; }
+    .register-steps {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        gap: .85rem;
+        margin: 2rem 0 0;
+        padding: 0;
+        list-style: none;
+    }
+    .register-steps li { display: flex; align-items: center; gap: .8rem; color: #e5ece8; font-size: .9rem; }
+    .register-step-number {
+        display: grid;
+        width: 30px;
+        aspect-ratio: 1;
+        place-items: center;
+        border: 1px solid rgba(240,196,139,.45);
+        border-radius: 50%;
+        color: #f0c48b;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+    .register-form-panel { padding: 2.4rem clamp(1.25rem, 4vw, 3rem); }
+    .register-heading { margin-bottom: 1.5rem; }
+    .register-heading h2 { margin: 0 0 .35rem; font-family: "Manrope", sans-serif; font-size: 1.7rem; font-weight: 800; }
+    .register-heading p, .register-page .form-text { color: var(--register-muted); }
+    .register-page .form-label { color: #314743; font-size: .87rem; font-weight: 700; }
+    .register-page .form-control, .register-page .form-select {
+        min-height: 45px;
+        border-color: #e2e9e5;
+        border-radius: 5px;
+        background-color: #fbfcfb;
+        color: var(--register-ink);
+    }
+    .register-page textarea.form-control { min-height: auto; }
+    .register-page .form-control:focus, .register-page .form-select:focus {
+        border-color: #6a9a87;
+        background-color: #fff;
+        box-shadow: 0 0 0 .2rem rgba(65,125,101,.13);
+    }
+    .role-fields { animation: role-reveal .2s ease-out; }
+    .role-fields[hidden] { display: none !important; }
+    .register-submit { min-height: 48px; border: 0; border-radius: 5px; background: var(--register-accent); font-weight: 700; }
+    .register-submit:hover { background: #b84931; }
+    .register-login { color: var(--register-muted); font-size: .9rem; }
+    .register-login a { color: #1a6558; font-weight: 700; text-decoration: none; }
+    @keyframes role-reveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 767.98px) {
+        .register-page { margin-top: .5rem; }
+        .register-layout { grid-template-columns: 1fr; }
+        .register-aside { min-height: 210px; padding: 1.5rem; }
+        .register-aside h1 { margin: 1rem 0 .5rem; font-size: 2rem; }
+        .register-aside p { margin-bottom: 0; }
+        .register-steps { display: none; }
+        .register-aside::after { right: -115px; bottom: -130px; }
+        .register-form-panel { padding: 1.5rem 1.25rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { .role-fields { animation: none; } }
+</style>
+
+<section class="register-page">
+    <div class="register-layout">
+        <aside class="register-aside">
+            <div>
+                <div class="register-kicker">Remote Repair Centre</div>
+                <h1>Your account, set up right.</h1>
+                <p>A few details now help us prepare the right workspace for you.</p>
+            </div>
+            <ol class="register-steps" aria-label="Registration steps">
+                <li><span class="register-step-number">01</span> Your details</li>
+                <li><span class="register-step-number">02</span> Account profile</li>
+                <li><span class="register-step-number">03</span> Secure sign-in</li>
+            </ol>
+        </aside>
+
+        <section class="register-form-panel" aria-labelledby="register-title">
+            <header class="register-heading">
+                <h2 id="register-title">Create your account</h2>
+                <p class="mb-0">Enter your details to get started.</p>
+            </header>
             <form method="POST" action="{{ url_for('register') }}" novalidate>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label for="name" class="form-label">Full name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ name|default('') }}" placeholder="Jordan Lee" required>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="mobile" class="form-label">Mobile number</label>
+                        <input type="tel" class="form-control" id="mobile" name="mobile" value="{{ mobile|default('') }}" placeholder="9876543210" pattern="[0-9]{10}" required>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ email|default('') }}" placeholder="you@example.com" required>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="role" class="form-label">Account type</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="" disabled {% if not role|default('') %}selected{% endif %}>Choose account type</option>
+                            <option value="customer" {% if role|default('') == 'customer' %}selected{% endif %}>Customer</option>
+                            <option value="delivery" {% if role|default('') == 'delivery' %}selected{% endif %}>Delivery boy</option>
+                            <option value="admin" {% if role|default('') == 'admin' %}selected{% endif %}>Admin</option>
+                            <option value="shop" {% if role|default('') == 'shop' %}selected{% endif %}>Shop</option>
+                        </select>
+                    </div>
 
-                <div class="mb-3">
-                    <label for="name" class="form-label">Full Name</label>
-                    <input type="text" class="form-control" id="name" name="name"
-                           value="{{ name|default('') }}" placeholder="John Doe" required>
-                    <div class="form-text">Letters and spaces only, 2-100 characters.</div>
+                    <div class="col-12 role-fields" data-role-fields="customer" hidden>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label for="device_type" class="form-label">Main device</label>
+                                <select class="form-select" id="device_type" name="device_type" data-required>
+                                    <option value="">Select device</option>
+                                    <option value="smartphone" {% if profile_data.get('device_type') == 'smartphone' %}selected{% endif %}>Smartphone</option>
+                                    <option value="laptop" {% if profile_data.get('device_type') == 'laptop' %}selected{% endif %}>Laptop</option>
+                                    <option value="tablet" {% if profile_data.get('device_type') == 'tablet' %}selected{% endif %}>Tablet</option>
+                                    <option value="other" {% if profile_data.get('device_type') == 'other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="contact_preference" class="form-label">Preferred contact</label>
+                                <select class="form-select" id="contact_preference" name="contact_preference" data-required>
+                                    <option value="">Choose contact method</option>
+                                    <option value="email" {% if profile_data.get('contact_preference') == 'email' %}selected{% endif %}>Email</option>
+                                    <option value="phone" {% if profile_data.get('contact_preference') == 'phone' %}selected{% endif %}>Phone</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 role-fields" data-role-fields="delivery" hidden>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label for="vehicle_type" class="form-label">Vehicle type</label>
+                                <select class="form-select" id="vehicle_type" name="vehicle_type" data-required>
+                                    <option value="">Select vehicle</option>
+                                    <option value="motorbike" {% if profile_data.get('vehicle_type') == 'motorbike' %}selected{% endif %}>Motorbike</option>
+                                    <option value="scooter" {% if profile_data.get('vehicle_type') == 'scooter' %}selected{% endif %}>Scooter</option>
+                                    <option value="car" {% if profile_data.get('vehicle_type') == 'car' %}selected{% endif %}>Car</option>
+                                    <option value="van" {% if profile_data.get('vehicle_type') == 'van' %}selected{% endif %}>Van</option>
+                                    <option value="other" {% if profile_data.get('vehicle_type') == 'other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="vehicle_number" class="form-label">Vehicle registration</label>
+                                <input class="form-control" id="vehicle_number" name="vehicle_number" value="{{ profile_data.get('vehicle_number', '') }}" placeholder="e.g. AB 12 CD 3456" data-required>
+                            </div>
+                            <div class="col-12">
+                                <label for="delivery_area" class="form-label">Preferred service area</label>
+                                <input class="form-control" id="delivery_area" name="delivery_service_area" value="{{ profile_data.get('service_area', '') if role == 'delivery' else '' }}" placeholder="City, district, or postal area" data-required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 role-fields" data-role-fields="shop" hidden>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label for="shop_name" class="form-label">Shop name</label>
+                                <input class="form-control" id="shop_name" name="shop_name" value="{{ profile_data.get('shop_name', '') }}" placeholder="Your business name" data-required>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="shop_category" class="form-label">Shop category</label>
+                                <select class="form-select" id="shop_category" name="shop_category" data-required>
+                                    <option value="">Choose category</option>
+                                    <option value="phone_repair" {% if profile_data.get('shop_category') == 'phone_repair' %}selected{% endif %}>Phone repair</option>
+                                    <option value="computer_repair" {% if profile_data.get('shop_category') == 'computer_repair' %}selected{% endif %}>Computer repair</option>
+                                    <option value="electronics" {% if profile_data.get('shop_category') == 'electronics' %}selected{% endif %}>Electronics</option>
+                                    <option value="general_repair" {% if profile_data.get('shop_category') == 'general_repair' %}selected{% endif %}>General repair</option>
+                                    <option value="other" {% if profile_data.get('shop_category') == 'other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="shop_area" class="form-label">Service area</label>
+                                <input class="form-control" id="shop_area" name="shop_service_area" value="{{ profile_data.get('service_area', '') if role == 'shop' else '' }}" placeholder="City, district, or postal area" data-required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 role-fields" data-role-fields="admin" hidden>
+                        <label for="admin_code" class="form-label">Admin invite code</label>
+                        <input type="password" class="form-control" id="admin_code" name="admin_code" autocomplete="off" placeholder="Enter your invite code" data-required>
+                        <div class="form-text">Admin registration requires an authorized invite code.</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="address" class="form-label" id="address-label">Address</label>
+                        <textarea class="form-control" id="address" name="address" rows="2" placeholder="Street, city, and postal code" required>{{ address|default('') }}</textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" autocomplete="new-password" placeholder="At least 8 characters" required>
+                        <div class="form-text">Include uppercase and lowercase letters, a number, and a symbol.</div>
+                    </div>
+                    <div class="col-12 pt-1">
+                        <button type="submit" class="btn btn-primary register-submit w-100">Create account</button>
+                    </div>
                 </div>
-
-                <div class="mb-3">
-                    <label for="mobile" class="form-label">Mobile Number</label>
-                    <input type="tel" class="form-control" id="mobile" name="mobile"
-                           value="{{ mobile|default('') }}" placeholder="9876543210" required>
-                    <div class="form-text">Exactly 10 digits.</div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email"
-                           value="{{ email|default('') }}" placeholder="you@example.com" required>
-                </div>
-
-                <div class="mb-3">
-                    <label for="address" class="form-label">Address</label>
-                    <textarea class="form-control" id="address" name="address" rows="2"
-                              placeholder="Your full address" required>{{ address|default('') }}</textarea>
-                    <div class="form-text">5-500 characters.</div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" name="password"
-                           placeholder="Min 8 chars, upper+lower+digit+special" required>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100">Register</button>
             </form>
-            <p class="text-center mt-3 mb-0">
-                Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+            <p class="register-login text-center mt-4 mb-0">
+                Already registered? <a href="{{ url_for('login') }}">Log in</a>
             </p>
-        </div>
+        </section>
     </div>
-</div>
+</section>
+
+<script>
+    (() => {
+        const roleSelect = document.getElementById("role");
+        const addressLabel = document.getElementById("address-label");
+        const groups = document.querySelectorAll("[data-role-fields]");
+
+        function updateRoleFields() {
+            const role = roleSelect.value;
+            groups.forEach((group) => {
+                const active = group.dataset.roleFields === role;
+                group.hidden = !active;
+                group.querySelectorAll("[data-required]").forEach((field) => {
+                    field.required = active;
+                    field.disabled = !active;
+                });
+            });
+            addressLabel.textContent = role === "shop" ? "Shop address" : role === "admin" ? "Work address" : "Address";
+        }
+
+        roleSelect.addEventListener("change", updateRoleFields);
+        updateRoleFields();
+    })();
+</script>
 {% endblock %}
 

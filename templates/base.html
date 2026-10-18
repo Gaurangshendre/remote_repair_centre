@@ -4,37 +4,262 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Remote Repair Centre{% endblock %}</title>
-    <!-- Bootstrap 5 CDN -->
+    <meta name="theme-color" content="#173b37">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
           rel="stylesheet">
     <style>
-        body { background-color: #f4f6f9; }
-        .card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        :root {
+            --ink: #19312e;
+            --muted: #71817c;
+            --paper: #fff;
+            --canvas: #edf2ee;
+            --line: #dfe7e2;
+            --forest: #173b37;
+            --moss: #2f6b5b;
+            --clay: #cf5b3c;
+            --gold: #f0c48b;
+            --shadow: 0 16px 42px rgba(24, 48, 42, .09);
+        }
+        * { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            background-color: var(--canvas);
+            background-image: linear-gradient(rgba(23,59,55,.025) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(23,59,55,.025) 1px, transparent 1px);
+            background-size: 32px 32px;
+            color: var(--ink);
+            font-family: "DM Sans", sans-serif;
+        }
+        .topbar {
+            position: relative;
+            z-index: 2;
+            background: var(--forest);
+            color: #f5f7f2;
+        }
+        .topbar-inner {
+            display: flex;
+            min-height: 76px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            width: min(1180px, calc(100% - 40px));
+            margin: 0 auto;
+        }
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            gap: .8rem;
+            color: inherit;
+            text-decoration: none;
+        }
+        .brand-mark {
+            display: grid;
+            width: 40px;
+            aspect-ratio: 1;
+            place-items: center;
+            border: 1px solid rgba(240,196,139,.6);
+            border-radius: 6px;
+            color: var(--gold);
+            font-family: "Manrope", sans-serif;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+        .brand-copy { display: grid; gap: .1rem; }
+        .brand-copy strong { font-family: "Manrope", sans-serif; font-size: .95rem; font-weight: 800; }
+        .brand-copy small { color: #b8cbc3; font-size: .63rem; font-weight: 700; letter-spacing: .12em; }
+        .topbar-actions { display: flex; align-items: center; gap: .8rem; }
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            color: #e7efeb;
+            font-size: .83rem;
+        }
+        .user-initial {
+            display: grid;
+            width: 34px;
+            aspect-ratio: 1;
+            place-items: center;
+            border-radius: 50%;
+            background: #d7e4dc;
+            color: var(--forest);
+            font-size: .8rem;
+            font-weight: 700;
+        }
+        .role-pill {
+            padding: .27rem .55rem;
+            border: 1px solid rgba(240,196,139,.4);
+            border-radius: 3px;
+            color: var(--gold);
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .topbar-link {
+            display: inline-flex;
+            min-height: 38px;
+            align-items: center;
+            justify-content: center;
+            padding: .45rem .85rem;
+            border: 1px solid rgba(255,255,255,.45);
+            border-radius: 4px;
+            color: #fff;
+            font-size: .82rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background .16s ease, color .16s ease;
+        }
+        .topbar-link:hover { background: #fff; color: var(--forest); }
+        .topbar-link-primary { border-color: var(--gold); background: var(--gold); color: var(--forest); }
+        .topbar-link-primary:hover { border-color: #f6d5a8; background: #f6d5a8; }
+        .page-frame { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+        .notice-frame { width: min(1180px, calc(100% - 40px)); margin: 1rem auto 0; }
+        .notice-frame .alert { border: 0; border-left: 4px solid var(--moss); border-radius: 4px; box-shadow: var(--shadow); }
+        .notice-frame .alert-danger { border-left-color: var(--clay); }
+        .notice-frame .alert-warning { border-left-color: #c18a31; }
+        .notice-frame .alert-info { border-left-color: #3f7892; }
+        .page-frame > :first-child { margin-top: 1.5rem; }
+        .eyebrow {
+            margin: 0 0 .5rem;
+            color: var(--moss);
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+        .dashboard-page { padding: 1.35rem 0 3rem; }
+        .dashboard-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .dashboard-heading h1 {
+            margin: 0;
+            font-family: "Manrope", sans-serif;
+            font-size: clamp(1.75rem, 3vw, 2.45rem);
+            font-weight: 800;
+            line-height: 1.15;
+        }
+        .dashboard-heading p:last-child { margin: .45rem 0 0; color: var(--muted); }
+        .dashboard-role {
+            flex: 0 0 auto;
+            padding: .5rem .7rem;
+            border-left: 3px solid var(--role-accent, var(--clay));
+            background: #fff;
+            color: var(--ink);
+            font-size: .75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, .8fr); gap: 1rem; }
+        .workspace-panel {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--paper);
+            box-shadow: 0 5px 18px rgba(24,48,42,.045);
+        }
+        .workspace-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .8rem;
+            padding: 1.1rem 1.25rem;
+            border-bottom: 1px solid #edf1ee;
+        }
+        .workspace-panel-head h2, .workspace-panel-head h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: 1rem; font-weight: 800; }
+        .panel-index { color: #91a19a; font-size: .73rem; font-weight: 700; }
+        .empty-state { display: grid; min-height: 225px; place-content: center; padding: 2rem; text-align: center; }
+        .empty-mark {
+            display: grid;
+            width: 48px;
+            aspect-ratio: 1;
+            place-items: center;
+            margin: 0 auto 1rem;
+            border: 1px solid #d8e5dd;
+            border-radius: 50%;
+            background: #f2f7f3;
+            color: var(--moss);
+            font-family: "Manrope", sans-serif;
+            font-size: .9rem;
+            font-weight: 800;
+        }
+        .empty-state h3 { margin: 0 0 .35rem; font-family: "Manrope", sans-serif; font-size: 1rem; font-weight: 800; }
+        .empty-state p { max-width: 330px; margin: 0 auto; color: var(--muted); font-size: .88rem; line-height: 1.6; }
+        .side-panel-content { padding: 1.25rem; }
+        .info-row { display: flex; justify-content: space-between; gap: 1rem; padding: .8rem 0; border-bottom: 1px solid #edf1ee; font-size: .85rem; }
+        .info-row:last-child { border-bottom: 0; }
+        .info-row span:first-child { color: var(--muted); }
+        .info-row span:last-child { font-weight: 700; text-align: right; }
+        .workspace-note { margin-top: 1rem; padding: 1rem 1.1rem; border-left: 3px solid var(--role-accent, var(--clay)); background: rgba(255,255,255,.72); color: #566964; font-size: .86rem; line-height: 1.6; }
+        .workspace-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .workspace-tile { min-height: 145px; padding: 1.2rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+        .workspace-tile span { color: var(--moss); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+        .workspace-tile h3 { margin: .8rem 0 .35rem; font-family: "Manrope", sans-serif; font-size: 1rem; font-weight: 800; }
+        .workspace-tile p { margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.55; }
+        @media (max-width: 760px) {
+            .topbar-inner { width: min(100% - 28px, 1180px); min-height: 68px; }
+            .page-frame, .notice-frame { width: min(100% - 28px, 1180px); }
+            .brand-copy small { display: none; }
+            .user-chip > span:not(.user-initial):not(.role-pill) { display: none; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .workspace-list { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 420px) {
+            .topbar-inner { gap: .5rem; }
+            .brand-mark { width: 34px; }
+            .brand-copy strong { font-size: .82rem; }
+            .topbar-actions { gap: .45rem; }
+            .topbar-link { min-height: 34px; padding: .35rem .55rem; font-size: .75rem; }
+            .role-pill { display: none; }
+            .dashboard-heading { align-items: start; flex-direction: column; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
     </style>
 </head>
 <body>
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-    <div class="container">
-        <a class="navbar-brand" href="/">🔧 Remote Repair Centre</a>
-        <div class="ms-auto">
+<header class="topbar">
+    <nav class="topbar-inner" aria-label="Main navigation">
+        {% if session.get('role') == 'admin' %}
+            {% set brand_url = url_for('admin_dashboard') %}
+        {% elif session.get('role') == 'delivery' %}
+            {% set brand_url = url_for('delivery_dashboard') %}
+        {% elif session.get('role') == 'shop' %}
+            {% set brand_url = url_for('shop_dashboard') %}
+        {% elif session.get('role') == 'customer' %}
+            {% set brand_url = url_for('customer_dashboard') %}
+        {% else %}
+            {% set brand_url = url_for('login') %}
+        {% endif %}
+        <a class="brand-link" href="{{ brand_url }}" aria-label="Remote Repair Centre home">
+            <span class="brand-mark" aria-hidden="true">R</span>
+            <span class="brand-copy">
+                <strong>Repair Centre</strong>
+                <small>REMOTE SERVICE DESK</small>
+            </span>
+        </a>
+        <div class="topbar-actions">
             {% if session.get('user_id') %}
-                <span class="navbar-text text-white me-3">
-                    Hello, {{ session.get('name', 'User') }}
-                    <span class="badge bg-light text-primary">{{ session.get('role', '') }}</span>
-                </span>
-                <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+                <div class="user-chip">
+                    <span class="user-initial" aria-hidden="true">{{ session.get('name', 'U')[:1]|upper }}</span>
+                    <span>{{ session.get('name', 'User') }}</span>
+                    <span class="role-pill">{{ session.get('role', '')|title }}</span>
+                </div>
+                <a href="{{ url_for('logout') }}" class="topbar-link">Log out</a>
             {% else %}
-                <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-sm me-2">Login</a>
-                <a href="{{ url_for('register') }}" class="btn btn-light btn-sm">Register</a>
+                <a href="{{ url_for('login') }}" class="topbar-link">Log in</a>
+                <a href="{{ url_for('register') }}" class="topbar-link topbar-link-primary">Create account</a>
             {% endif %}
         </div>
-    </div>
-</nav>
+    </nav>
+</header>
 
-<!-- Flash messages -->
-<div class="container">
+<div class="notice-frame">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -47,10 +272,9 @@
     {% endwith %}
 </div>
 
-<!-- Main content -->
-<div class="container">
+<main class="page-frame">
     {% block content %}{% endblock %}
-</div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

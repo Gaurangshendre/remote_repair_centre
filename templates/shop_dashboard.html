@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Shop Dashboard – Remote Repair Centre{% endblock %}
+
+{% block content %}
+<section class="dashboard-page" style="--role-accent: #597f9a;">
+    <header class="dashboard-heading">
+        <div>
+            <p class="eyebrow">SERVICE PARTNER</p>
+            <h1>Shop workspace</h1>
+            <p>Welcome, {{ session.get('name', 'Shop') }}.</p>
+        </div>
+        <span class="dashboard-role">Repair shop</span>
+    </header>
+    <div class="dashboard-grid">
+        <section class="workspace-panel" aria-labelledby="shop-queue-title">
+            <div class="workspace-panel-head">
+                <h2 id="shop-queue-title">Repair work queue</h2>
+                <span class="panel-index">01 / WORK</span>
+            </div>
+            <div class="empty-state">
+                <span class="empty-mark" aria-hidden="true">FIX</span>
+                <h3>No repair work to show</h3>
+                <p>Repair requests assigned to your shop will be listed here.</p>
+            </div>
+        </section>
+        <aside class="workspace-panel" aria-labelledby="shop-account-title">
+            <div class="workspace-panel-head">
+                <h2 id="shop-account-title">Partner overview</h2>
+                <span class="panel-index">02 / ACCOUNT</span>
+            </div>
+            <div class="side-panel-content">
+                <div class="info-row"><span>Account holder</span><span>{{ session.get('name', 'Shop') }}</span></div>
+                <div class="info-row"><span>Workspace</span><span>Repair shop</span></div>
+                <div class="info-row"><span>Work queue</span><span>Ready</span></div>
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

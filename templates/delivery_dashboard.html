@@ -2,14 +2,39 @@
 {% block title %}Delivery Dashboard – Remote Repair Centre{% endblock %}
 
 {% block content %}
-<div class="row mt-4">
-    <div class="col">
-        <h2>Delivery Dashboard</h2>
-        <p class="lead">Welcome, {{ session.get('name', 'Delivery Partner') }}!</p>
-        <div class="card p-4">
-            <p>Your assigned pickups and deliveries will appear here.</p>
+<section class="dashboard-page" style="--role-accent: #cf5b3c;">
+    <header class="dashboard-heading">
+        <div>
+            <p class="eyebrow">FIELD OPERATIONS</p>
+            <h1>Delivery workspace</h1>
+            <p>Welcome, {{ session.get('name', 'Delivery Partner') }}.</p>
         </div>
+        <span class="dashboard-role">Delivery partner</span>
+    </header>
+    <div class="dashboard-grid">
+        <section class="workspace-panel" aria-labelledby="delivery-route-title">
+            <div class="workspace-panel-head">
+                <h2 id="delivery-route-title">Pickup &amp; delivery queue</h2>
+                <span class="panel-index">01 / ROUTE</span>
+            </div>
+            <div class="empty-state">
+                <span class="empty-mark" aria-hidden="true">GO</span>
+                <h3>No assigned stops to show</h3>
+                <p>Pickups and deliveries assigned to your account will appear in this queue.</p>
+            </div>
+        </section>
+        <aside class="workspace-panel" aria-labelledby="delivery-profile-title">
+            <div class="workspace-panel-head">
+                <h2 id="delivery-profile-title">Partner profile</h2>
+                <span class="panel-index">02 / ACCOUNT</span>
+            </div>
+            <div class="side-panel-content">
+                <div class="info-row"><span>Partner</span><span>{{ session.get('name', 'Delivery Partner') }}</span></div>
+                <div class="info-row"><span>Workspace</span><span>Delivery</span></div>
+                <div class="info-row"><span>Route status</span><span>Awaiting assignments</span></div>
+            </div>
+        </aside>
     </div>
-</div>
+</section>
 {% endblock %}
 

@@ -2,14 +2,39 @@
 {% block title %}Customer Dashboard – Remote Repair Centre{% endblock %}
 
 {% block content %}
-<div class="row mt-4">
-    <div class="col">
-        <h2>Customer Dashboard</h2>
-        <p class="lead">Welcome, {{ session.get('name', 'Customer') }}!</p>
-        <div class="card p-4">
-            <p>Your repair requests and order history will appear here.</p>
+<section class="dashboard-page" style="--role-accent: #3e806d;">
+    <header class="dashboard-heading">
+        <div>
+            <p class="eyebrow">CUSTOMER WORKSPACE</p>
+            <h1>Your repair activity</h1>
+            <p>Welcome back, {{ session.get('name', 'Customer') }}.</p>
         </div>
+        <span class="dashboard-role">Customer</span>
+    </header>
+    <div class="dashboard-grid">
+        <section class="workspace-panel" aria-labelledby="customer-repairs-title">
+            <div class="workspace-panel-head">
+                <h2 id="customer-repairs-title">Recent repairs</h2>
+                <span class="panel-index">01 / ACTIVITY</span>
+            </div>
+            <div class="empty-state">
+                <span class="empty-mark" aria-hidden="true">RC</span>
+                <h3>Your repair list is clear</h3>
+                <p>Repair requests and their latest updates will be collected here.</p>
+            </div>
+        </section>
+        <aside class="workspace-panel" aria-labelledby="customer-account-title">
+            <div class="workspace-panel-head">
+                <h2 id="customer-account-title">Account overview</h2>
+                <span class="panel-index">02 / PROFILE</span>
+            </div>
+            <div class="side-panel-content">
+                <div class="info-row"><span>Account holder</span><span>{{ session.get('name', 'Customer') }}</span></div>
+                <div class="info-row"><span>Workspace</span><span>Customer</span></div>
+                <div class="info-row"><span>Repair history</span><span>Ready</span></div>
+            </div>
+        </aside>
     </div>
-</div>
+</section>
 {% endblock %}
 

@@ -2,31 +2,92 @@
 {% block title %}Login – Remote Repair Centre{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-5 col-lg-4">
-        <div class="card p-4">
-            <h3 class="text-center mb-3">Log In</h3>
+<style>
+    .login-page { max-width: 1020px; margin: 2.25rem auto 4rem; }
+    .login-layout {
+        display: grid;
+        grid-template-columns: minmax(260px, .9fr) minmax(0, 1.1fr);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #fff;
+        box-shadow: var(--shadow);
+    }
+    .login-aside {
+        position: relative;
+        display: flex;
+        min-height: 480px;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow: hidden;
+        padding: 2.5rem;
+        background: #dce9df;
+    }
+    .login-aside::after {
+        position: absolute;
+        right: -85px;
+        bottom: -90px;
+        width: 270px;
+        aspect-ratio: 1;
+        border: 1px solid rgba(47,107,91,.36);
+        border-radius: 50%;
+        box-shadow: 0 0 0 24px rgba(47,107,91,.055), 0 0 0 52px rgba(47,107,91,.04);
+        content: "";
+    }
+    .login-aside h1 { max-width: 350px; margin: 2.8rem 0 1rem; font-family: "Manrope", sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; line-height: 1.07; }
+    .login-aside p { max-width: 300px; color: #5a7068; line-height: 1.7; }
+    .login-aside-foot { position: relative; z-index: 1; color: #466158; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .login-panel { align-self: center; width: 100%; padding: 3rem clamp(1.5rem, 5vw, 4rem); }
+    .login-panel h2 { margin: 0 0 .4rem; font-family: "Manrope", sans-serif; font-size: 1.8rem; font-weight: 800; }
+    .login-panel .intro { margin: 0 0 1.8rem; color: var(--muted); }
+    .login-panel .form-label { color: #314743; font-size: .87rem; font-weight: 700; }
+    .login-panel .form-control { min-height: 48px; border-color: var(--line); border-radius: 5px; background: #fbfcfb; }
+    .login-panel .form-control:focus { border-color: #6a9a87; box-shadow: 0 0 0 .2rem rgba(65,125,101,.13); }
+    .login-submit { min-height: 48px; border: 0; border-radius: 5px; background: var(--clay); font-weight: 700; }
+    .login-submit:hover { background: #b84931; }
+    .login-register { margin: 1.4rem 0 0; color: var(--muted); font-size: .9rem; text-align: center; }
+    .login-register a { color: var(--moss); font-weight: 700; text-decoration: none; }
+    @media (max-width: 700px) {
+        .login-page { margin-top: .75rem; }
+        .login-layout { grid-template-columns: 1fr; }
+        .login-aside { min-height: 220px; padding: 1.6rem; }
+        .login-aside h1 { margin: 1.3rem 0 .5rem; font-size: 2rem; }
+        .login-aside p { margin-bottom: 0; }
+        .login-aside-foot { display: none; }
+        .login-panel { padding: 2rem 1.5rem; }
+    }
+</style>
+
+<section class="login-page">
+    <div class="login-layout">
+        <aside class="login-aside">
+            <div>
+                <p class="eyebrow">REMOTE REPAIR CENTRE</p>
+                <h1>Keep good work moving.</h1>
+                <p>Sign in to return to your repair centre workspace.</p>
+            </div>
+            <div class="login-aside-foot">Service, connected.</div>
+        </aside>
+        <section class="login-panel" aria-labelledby="login-title">
+            <p class="eyebrow">WELCOME BACK</p>
+            <h2 id="login-title">Log in</h2>
+            <p class="intro">Use the email address linked to your account.</p>
             <form method="POST" action="{{ url_for('login') }}" novalidate>
-
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
+                    <label for="email" class="form-label">Email address</label>
                     <input type="email" class="form-control" id="email" name="email"
-                           value="{{ email|default('') }}" placeholder="you@example.com" required>
+                           value="{{ email|default('') }}" placeholder="you@example.com" autocomplete="email" required>
                 </div>
-
-                <div class="mb-3">
+                <div class="mb-4">
                     <label for="password" class="form-label">Password</label>
                     <input type="password" class="form-control" id="password" name="password"
-                           placeholder="Your password" required>
+                           placeholder="Your password" autocomplete="current-password" required>
                 </div>
-
-                <button type="submit" class="btn btn-primary w-100">Log In</button>
+                <button type="submit" class="btn btn-primary login-submit w-100">Continue to workspace</button>
             </form>
-            <p class="text-center mt-3 mb-0">
-                Don't have an account? <a href="{{ url_for('register') }}">Register</a>
-            </p>
-        </div>
+            <p class="login-register">New to the centre? <a href="{{ url_for('register') }}">Create an account</a></p>
+        </section>
     </div>
-</div>
+</section>
 {% endblock %}
 
