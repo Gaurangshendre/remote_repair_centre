@@ -2,27 +2,134 @@
 {% block title %}Customer Dashboard – Remote Repair Centre{% endblock %}
 
 {% block content %}
+<style>
+    .status-badge-sm {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .2rem .55rem;
+        border-radius: 4px;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+    .status-badge-sm::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    .status-pickup-pending { background: #fef7ec; color: #b26a15; border: 1px solid #f6deb6; }
+    .status-pickup-assigned { background: #eff6ff; color: #1e62d0; border: 1px solid #bfdbfe; }
+    .status-picked-up { background: #f3f0ff; color: #6941c6; border: 1px solid #ddd6fe; }
+    .status-under-inspection { background: #ecfeff; color: #088ab2; border: 1px solid #a5f3fc; }
+    .status-repair-in-progress { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-repaired { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .status-out-for-delivery { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+    .status-delivered { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+    .status-cancelled { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .status-default { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+
+    .req-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .9rem 1.25rem;
+        border-bottom: 1px solid #edf1ee;
+        transition: background .12s ease;
+    }
+    .req-item:last-child { border-bottom: none; }
+    .req-item:hover { background: #fafcfb; }
+</style>
+
 <section class="dashboard-page" style="--role-accent: #3e806d;">
     <header class="dashboard-heading">
         <div>
             <p class="eyebrow">CUSTOMER WORKSPACE</p>
             <h1>Your repair activity</h1>
-            <p>Welcome back, {{ session.get('name', 'Customer') }}.</p>
+            <p>Welcome back, {{ session.get('name', 'Customer') }}. Manage your device service requests.</p>
         </div>
-        <span class="dashboard-role">Customer</span>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('new_request') }}" class="btn btn-sm" style="background: var(--moss); color: #fff; font-weight: 700; padding: .45rem .9rem;">
+                + New Request
+            </a>
+            <span class="dashboard-role">Customer</span>
+        </div>
     </header>
+
     <div class="dashboard-grid">
+        <!-- Recent Requests Panel -->
         <section class="workspace-panel" aria-labelledby="customer-repairs-title">
             <div class="workspace-panel-head">
-                <h2 id="customer-repairs-title">Recent repairs</h2>
-                <span class="panel-index">01 / ACTIVITY</span>
+                <h2 id="customer-repairs-title">Recent requests</h2>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('my_requests') }}" style="color: var(--moss); font-size: .8rem; font-weight: 700; text-decoration: none;">
+                        View All ({{ recent_requests|length }}) →
+                    </a>
+                </div>
             </div>
-            <div class="empty-state">
-                <span class="empty-mark" aria-hidden="true">RC</span>
-                <h3>Your repair list is clear</h3>
-                <p>Repair requests and their latest updates will be collected here.</p>
-            </div>
+
+            {% if recent_requests and recent_requests|length > 0 %}
+                <div>
+                    {% for req in recent_requests[:5] %}
+                    <div class="req-item">
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <strong style="font-size: .88rem; color: var(--ink);">{{ req.company }} {{ req.model }}</strong>
+                                <span class="badge bg-light text-dark border" style="font-size: .7rem;">{{ req.request_type }}</span>
+                            </div>
+                            <small class="text-muted d-block mt-1" style="font-size: .78rem;">
+                                Part: <strong>{{ req.part }}</strong> &bull; #{{ req.request_id[:8]|upper }}
+                            </small>
+                        </div>
+                        <div>
+                            {% set status_slug = req.status|lower|replace(' ', '-') %}
+                            {% if status_slug == 'pickup-pending' %}
+                                <span class="status-badge-sm status-pickup-pending">{{ req.status }}</span>
+                            {% elif status_slug == 'pickup-assigned' %}
+                                <span class="status-badge-sm status-pickup-assigned">{{ req.status }}</span>
+                            {% elif status_slug == 'picked-up' %}
+                                <span class="status-badge-sm status-picked-up">{{ req.status }}</span>
+                            {% elif status_slug == 'under-inspection' %}
+                                <span class="status-badge-sm status-under-inspection">{{ req.status }}</span>
+                            {% elif status_slug == 'repair-in-progress' %}
+                                <span class="status-badge-sm status-repair-in-progress">{{ req.status }}</span>
+                            {% elif status_slug == 'repaired' %}
+                                <span class="status-badge-sm status-repaired">{{ req.status }}</span>
+                            {% elif status_slug == 'out-for-delivery' %}
+                                <span class="status-badge-sm status-out-for-delivery">{{ req.status }}</span>
+                            {% elif status_slug == 'delivered' %}
+                                <span class="status-badge-sm status-delivered">{{ req.status }}</span>
+                            {% elif status_slug == 'cancelled' %}
+                                <span class="status-badge-sm status-cancelled">{{ req.status }}</span>
+                            {% else %}
+                                <span class="status-badge-sm status-default">{{ req.status }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="p-3 text-center border-top">
+                    <a href="{{ url_for('my_requests') }}" style="color: var(--moss); font-weight: 700; font-size: .85rem; text-decoration: none;">
+                        Open full requests page →
+                    </a>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <span class="empty-mark" aria-hidden="true">RC</span>
+                    <h3>Your repair list is clear</h3>
+                    <p>You have no active repair or resell requests.</p>
+                    <div class="mt-2">
+                        <a href="{{ url_for('new_request') }}" class="btn btn-sm" style="background: var(--moss); color: #fff; font-weight: 700;">
+                            Submit a New Request
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
         </section>
+
+        <!-- Profile / Quick Actions Aside -->
         <aside class="workspace-panel" aria-labelledby="customer-account-title">
             <div class="workspace-panel-head">
                 <h2 id="customer-account-title">Account overview</h2>
@@ -30,11 +137,20 @@
             </div>
             <div class="side-panel-content">
                 <div class="info-row"><span>Account holder</span><span>{{ session.get('name', 'Customer') }}</span></div>
-                <div class="info-row"><span>Workspace</span><span>Customer</span></div>
-                <div class="info-row"><span>Repair history</span><span>Ready</span></div>
+                <div class="info-row"><span>Role</span><span>Customer</span></div>
+                <div class="info-row"><span>Total requests</span><span>{{ recent_requests|length }}</span></div>
+            </div>
+            <div class="p-3 border-top mt-auto">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('new_request') }}" class="btn btn-outline-success btn-sm fw-bold">
+                        + New Service Request
+                    </a>
+                    <a href="{{ url_for('my_requests') }}" class="btn btn-outline-secondary btn-sm fw-semibold">
+                        View All Requests
+                    </a>
+                </div>
             </div>
         </aside>
     </div>
 </section>
 {% endblock %}
-

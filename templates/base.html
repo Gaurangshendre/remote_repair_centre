@@ -115,6 +115,29 @@
         .topbar-link:hover { background: #fff; color: var(--forest); }
         .topbar-link-primary { border-color: var(--gold); background: var(--gold); color: var(--forest); }
         .topbar-link-primary:hover { border-color: #f6d5a8; background: #f6d5a8; }
+        .topbar-nav {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .topbar-nav-link {
+            color: #d1dfd9;
+            font-size: .84rem;
+            font-weight: 600;
+            text-decoration: none;
+            padding: .4rem .75rem;
+            border-radius: 4px;
+            transition: all .15s ease;
+        }
+        .topbar-nav-link:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, .1);
+        }
+        .topbar-nav-link.active {
+            color: var(--gold);
+            background: rgba(240, 196, 139, .12);
+            font-weight: 700;
+        }
         .page-frame { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
         .notice-frame { width: min(1180px, calc(100% - 40px)); margin: 1rem auto 0; }
         .notice-frame .alert { border: 0; border-left: 4px solid var(--moss); border-radius: 4px; box-shadow: var(--shadow); }
@@ -243,6 +266,16 @@
                 <small>REMOTE SERVICE DESK</small>
             </span>
         </a>
+        <div class="topbar-nav d-none d-md-flex">
+            {% if session.get('role') == 'customer' %}
+                <a href="{{ url_for('customer_dashboard') }}" class="topbar-nav-link {% if request.endpoint == 'customer_dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="{{ url_for('new_request') }}" class="topbar-nav-link {% if request.endpoint == 'new_request' %}active{% endif %}">+ New Request</a>
+                <a href="{{ url_for('my_requests') }}" class="topbar-nav-link {% if request.endpoint == 'my_requests' %}active{% endif %}">My Requests</a>
+            {% elif session.get('role') == 'admin' %}
+                <a href="{{ url_for('admin_dashboard') }}" class="topbar-nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="{{ url_for('admin_requests') }}" class="topbar-nav-link {% if request.endpoint == 'admin_requests' %}active{% endif %}">All Requests</a>
+            {% endif %}
+        </div>
         <div class="topbar-actions">
             {% if session.get('user_id') %}
                 <div class="user-chip">

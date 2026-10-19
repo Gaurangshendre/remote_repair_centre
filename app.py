@@ -1,9 +1,10 @@
 """Remote Repair Centre – Flask Application (Supabase backend)."""
 
 import hmac
+import os
 import re
 import uuid
-import os
+from functools import wraps
 
 from dotenv import load_dotenv
 from flask import (
@@ -218,43 +219,21 @@ def logout():
     return redirect(url_for("login"))
 
 # ---------------------------------------------------------------------------
-# Dashboard stubs (role-specific)
+# Access control & role helpers
 # ---------------------------------------------------------------------------
 
-@app.route("/customer/dashboard")
-def customer_dashboard():
-    if session.get("role") != "customer":
-        flash("Access denied.", "danger")
-        return redirect(url_for("login"))
-    return render_template("customer_dashboard.html")
+REQUEST_STATUSES = [
+    "Pickup Pending",
+    "Pickup Assigned",
+    "Picked Up",
+    "Under Inspection",
+    "Repair in Progress",
+    "Repaired",
+    "Out for Delivery",
+    "Delivered",
+    "Cancelled",
+]
 
-
-@app.route("/admin/dashboard")
-def admin_dashboard():
-    if session.get("role") != "admin":
-        flash("Access denied.", "danger")
-        return redirect(url_for("login"))
-    return render_template("admin_dashboard.html")
-
-
-@app.route("/delivery/dashboard")
-def delivery_dashboard():
-    if session.get("role") != "delivery":
-        flash("Access denied.", "danger")
-        return redirect(url_for("login"))
-    return render_template("delivery_dashboard.html")
-
-
-@app.route("/shop/dashboard")
-def shop_dashboard():
-    if session.get("role") != "shop":
-        flash("Access denied.", "danger")
-        return redirect(url_for("login"))
-    return render_template("shop_dashboard.html")
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _redirect_by_role(role):
     """Return a redirect response to the correct dashboard for *role*."""
@@ -269,8 +248,300 @@ def _redirect_by_role(role):
     return redirect(url_for("login"))
 
 
+def login_required(view_func):
+    """Ensure user is logged in before accessing the view."""
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if not session.get("user_id"):
+            flash("Please log in to continue.", "warning")
+            return redirect(url_for("login"))
+        return view_func(*args, **kwargs)
+    return wrapper
+
+
+def role_required(*allowed_roles):
+    """Ensure user is logged in and possesses one of the allowed roles."""
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(*args, **kwargs):
+            if not session.get("user_id"):
+                flash("Please log in to continue.", "warning")
+                return redirect(url_for("login"))
+            user_role = session.get("role")
+            if user_role not in allowed_roles:
+                flash("Access denied. You do not have permission to access this page.", "danger")
+                if user_role == "customer":
+                    return redirect(url_for("customer_dashboard"))
+                return _redirect_by_role(user_role)
+            return view_func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+# ---------------------------------------------------------------------------
+# Dashboard routes (role-specific)
+# ---------------------------------------------------------------------------
+
+@app.route("/customer/dashboard")
+@role_required("customer")
+def customer_dashboard():
+    recent_requests = []
+    try:
+        res = (
+            supabase.table("requests")
+            .select("*")
+            .eq("user_id", session["user_id"])
+            .order("created_at", desc=True)
+            .execute()
+        )
+        recent_requests = res.data or []
+    except Exception:
+        recent_requests = []
+    return render_template("customer_dashboard.html", recent_requests=recent_requests)
+
+
+@app.route("/admin/dashboard")
+@role_required("admin")
+def admin_dashboard():
+    total_requests = 0
+    pending_requests = 0
+    try:
+        res = supabase.table("requests").select("status").execute()
+        all_reqs = res.data or []
+        total_requests = len(all_reqs)
+        pending_requests = sum(1 for r in all_reqs if r.get("status") == "Pickup Pending")
+    except Exception:
+        pass
+    return render_template(
+        "admin_dashboard.html",
+        total_requests=total_requests,
+        pending_requests=pending_requests,
+    )
+
+
+@app.route("/delivery/dashboard")
+@role_required("delivery")
+def delivery_dashboard():
+    return render_template("delivery_dashboard.html")
+
+
+@app.route("/shop/dashboard")
+@role_required("shop")
+def shop_dashboard():
+    return render_template("shop_dashboard.html")
+
+
+# ---------------------------------------------------------------------------
+# Customer Service Request routes
+# ---------------------------------------------------------------------------
+
+@app.route("/customer/requests/new", methods=["GET", "POST"])
+@app.route("/requests/new", methods=["GET", "POST"])
+@role_required("customer")
+def new_request():
+    """Create a new repair or resell request."""
+    if request.method == "POST":
+        company = request.form.get("company", "").strip()
+        model = request.form.get("model", "").strip()
+        request_type = request.form.get("request_type", "").strip()
+        part = request.form.get("part", "").strip()
+        issue_description = request.form.get("issue_description", "").strip()
+
+        errors = []
+        if not company or len(company) < 2 or len(company) > 100:
+            errors.append("Company/brand name must be between 2 and 100 characters.")
+        if not model or len(model) < 1 or len(model) > 100:
+            errors.append("Model name must be between 1 and 100 characters.")
+        if request_type not in ("Repair", "Resell"):
+            errors.append("Request type must be either 'Repair' or 'Resell'.")
+        if not part or len(part) < 2 or len(part) > 100:
+            errors.append("Please select or specify the affected part.")
+        if not issue_description or len(issue_description) < 10 or len(issue_description) > 2000:
+            errors.append("Issue description must be between 10 and 2000 characters.")
+
+        if errors:
+            for err in errors:
+                flash(err, "danger")
+            return render_template(
+                "new_request.html",
+                company=company,
+                model=model,
+                request_type=request_type,
+                part=part,
+                issue_description=issue_description,
+            )
+
+        new_req_id = str(uuid.uuid4())
+        req_doc = {
+            "request_id": new_req_id,
+            "user_id": session["user_id"],
+            "company": company,
+            "model": model,
+            "request_type": request_type,
+            "part": part,
+            "issue_description": issue_description,
+            "status": "Pickup Pending",
+            "delivery_boy_id": None,
+        }
+
+        try:
+            supabase.table("requests").insert(req_doc).execute()
+            flash("Service request submitted successfully! Status: Pickup Pending.", "success")
+            return redirect(url_for("my_requests"))
+        except Exception as e:
+            flash(
+                f"Error submitting request: {e}. Please ensure the 'requests' table has been created in your Supabase database using supabase_schema.sql.",
+                "danger",
+            )
+            return render_template(
+                "new_request.html",
+                company=company,
+                model=model,
+                request_type=request_type,
+                part=part,
+                issue_description=issue_description,
+            )
+
+    return render_template("new_request.html", request_type="Repair")
+
+
+@app.route("/customer/requests")
+@app.route("/my-requests")
+@role_required("customer")
+def my_requests():
+    """List only the logged-in customer's requests with their statuses."""
+    requests_list = []
+    delivery_map = {}
+    try:
+        res = (
+            supabase.table("requests")
+            .select("*")
+            .eq("user_id", session["user_id"])
+            .order("created_at", desc=True)
+            .execute()
+        )
+        requests_list = res.data or []
+
+        # Fetch delivery boys details for any assigned requests
+        assigned_ids = list({r["delivery_boy_id"] for r in requests_list if r.get("delivery_boy_id")})
+        if assigned_ids:
+            db_res = (
+                supabase.table("users")
+                .select("user_id, name, mobile")
+                .in_("user_id", assigned_ids)
+                .execute()
+            )
+            delivery_map = {u["user_id"]: u for u in (db_res.data or [])}
+    except Exception as e:
+        flash(
+            f"Could not load requests: {e}. Please ensure the 'requests' table is created in Supabase.",
+            "warning",
+        )
+
+    return render_template(
+        "my_requests.html",
+        requests=requests_list,
+        delivery_map=delivery_map,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Admin Management routes
+# ---------------------------------------------------------------------------
+
+@app.route("/admin/requests")
+@role_required("admin")
+def admin_requests():
+    """List all requests with dropdowns to assign a delivery boy and update status."""
+    status_filter = request.args.get("status", "").strip()
+    requests_list = []
+    delivery_boys = []
+    user_map = {}
+
+    try:
+        # Fetch requests
+        query = supabase.table("requests").select("*")
+        if status_filter:
+            query = query.eq("status", status_filter)
+        res = query.order("created_at", desc=True).execute()
+        requests_list = res.data or []
+
+        # Fetch delivery boys
+        db_res = (
+            supabase.table("users")
+            .select("user_id, name, mobile")
+            .eq("role", "delivery")
+            .execute()
+        )
+        delivery_boys = db_res.data or []
+
+        # Fetch customer info for addresses and contacts
+        user_ids = list({r["user_id"] for r in requests_list if r.get("user_id")})
+        if user_ids:
+            u_res = (
+                supabase.table("users")
+                .select("user_id, name, mobile, address, email")
+                .in_("user_id", user_ids)
+                .execute()
+            )
+            user_map = {u["user_id"]: u for u in (u_res.data or [])}
+    except Exception as e:
+        flash(
+            f"Could not load requests: {e}. Please ensure the 'requests' table is created in Supabase.",
+            "warning",
+        )
+
+    return render_template(
+        "admin_requests.html",
+        requests=requests_list,
+        delivery_boys=delivery_boys,
+        user_map=user_map,
+        all_statuses=REQUEST_STATUSES,
+        current_status=status_filter,
+    )
+
+
+@app.route("/admin/requests/<request_id>/update", methods=["POST"])
+@role_required("admin")
+def admin_update_request(request_id):
+    """Update assigned delivery boy and/or status for a request."""
+    delivery_boy_id = request.form.get("delivery_boy_id", "").strip() or None
+    new_status = request.form.get("status", "").strip()
+
+    updates = {}
+    if new_status:
+        if new_status not in REQUEST_STATUSES:
+            flash(f"Invalid status '{new_status}'.", "danger")
+            return redirect(url_for("admin_requests"))
+        updates["status"] = new_status
+
+    if delivery_boy_id:
+        db_check = (
+            supabase.table("users")
+            .select("user_id")
+            .eq("user_id", delivery_boy_id)
+            .eq("role", "delivery")
+            .execute()
+        )
+        if not db_check.data:
+            flash("Selected delivery person not found.", "danger")
+            return redirect(url_for("admin_requests"))
+        updates["delivery_boy_id"] = delivery_boy_id
+    else:
+        updates["delivery_boy_id"] = None
+
+    try:
+        supabase.table("requests").update(updates).eq("request_id", request_id).execute()
+        flash(f"Request #{request_id[:8].upper()} updated successfully.", "success")
+    except Exception as e:
+        flash(f"Failed to update request: {e}", "danger")
+
+    return redirect(url_for("admin_requests"))
+
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
+

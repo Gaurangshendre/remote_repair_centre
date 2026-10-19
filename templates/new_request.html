@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block title %}New Request – Remote Repair Centre{% endblock %}
+
+{% block content %}
+<style>
+    .request-page { max-width: 1040px; margin: 1.5rem auto 3.5rem; }
+    .request-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(280px, .85fr);
+        gap: 1.5rem;
+    }
+    .form-panel {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(24, 48, 42, .05);
+        overflow: hidden;
+    }
+    .form-panel-header {
+        padding: 1.75rem 2rem 1.25rem;
+        border-bottom: 1px solid #edf1ee;
+        background: linear-gradient(180deg, #fafcfb 0%, #ffffff 100%);
+    }
+    .form-panel-header h1 {
+        margin: 0;
+        font-family: "Manrope", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--forest);
+    }
+    .form-panel-header p {
+        margin: .35rem 0 0;
+        color: var(--muted);
+        font-size: .88rem;
+    }
+    .form-panel-body {
+        padding: 2rem;
+    }
+    .form-label {
+        color: #263e39;
+        font-size: .84rem;
+        font-weight: 700;
+        margin-bottom: .4rem;
+    }
+    .form-label .required {
+        color: var(--clay);
+        margin-left: 2px;
+    }
+    .form-control, .form-select {
+        min-height: 46px;
+        border-color: var(--line);
+        border-radius: 5px;
+        background: #fbfcfb;
+        font-size: .92rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #5c937f;
+        box-shadow: 0 0 0 .2rem rgba(47, 107, 91, .15);
+        background: #fff;
+    }
+    .form-text {
+        font-size: .78rem;
+        color: var(--muted);
+        margin-top: .35rem;
+    }
+    .btn-submit-req {
+        min-height: 48px;
+        background: var(--moss);
+        border: none;
+        color: #fff;
+        font-weight: 700;
+        font-size: .95rem;
+        border-radius: 5px;
+        padding: 0 1.75rem;
+        transition: background .15s ease, transform .1s ease;
+    }
+    .btn-submit-req:hover {
+        background: var(--forest);
+        color: #fff;
+    }
+    .sidebar-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(24, 48, 42, .04);
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    .sidebar-card h3 {
+        font-family: "Manrope", sans-serif;
+        font-size: 1rem;
+        font-weight: 800;
+        margin: 0 0 .75rem;
+        color: var(--forest);
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+    .step-item {
+        display: flex;
+        gap: .85rem;
+        margin-bottom: 1rem;
+    }
+    .step-item:last-child { margin-bottom: 0; }
+    .step-number {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #e4eee9;
+        color: var(--forest);
+        font-weight: 800;
+        font-size: .75rem;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .step-info strong {
+        display: block;
+        font-size: .84rem;
+        color: var(--ink);
+    }
+    .step-info small {
+        color: var(--muted);
+        font-size: .78rem;
+        line-height: 1.4;
+        display: block;
+    }
+    .badge-preview {
+        display: inline-flex;
+        align-items: center;
+        padding: .25rem .6rem;
+        border-radius: 4px;
+        font-size: .75rem;
+        font-weight: 700;
+        background: #fbf3e5;
+        color: #a06316;
+        border: 1px solid #f2dec0;
+    }
+    @media (max-width: 820px) {
+        .request-layout { grid-template-columns: 1fr; }
+        .form-panel-body { padding: 1.5rem; }
+    }
+</style>
+
+<section class="request-page">
+    <div class="mb-3 d-flex align-items-center justify-content-between">
+        <a href="{{ url_for('customer_dashboard') }}" class="text-decoration-none d-inline-flex align-items-center gap-1" style="color: var(--moss); font-size: .88rem; font-weight: 600;">
+            ← Back to Dashboard
+        </a>
+        <a href="{{ url_for('my_requests') }}" class="text-decoration-none d-inline-flex align-items-center gap-1" style="color: var(--muted); font-size: .88rem; font-weight: 600;">
+            View My Requests →
+        </a>
+    </div>
+
+    <div class="request-layout">
+        <!-- Main Form -->
+        <div class="form-panel">
+            <div class="form-panel-header">
+                <p class="eyebrow">DEVICE SERVICE DESK</p>
+                <h1>Create New Service Request</h1>
+                <p>Submit your repair or resell request for doorstep pickup and certified diagnosis.</p>
+            </div>
+
+            <form action="{{ url_for('new_request') }}" method="POST" class="form-panel-body" novalidate>
+                <!-- Company & Model -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="company" class="form-label">Company / Brand <span class="required">*</span></label>
+                        <input type="text"
+                               class="form-control"
+                               id="company"
+                               name="company"
+                               list="brand-suggestions"
+                               placeholder="e.g. Apple, Samsung, Dell, HP"
+                               value="{{ company|default('') }}"
+                               required>
+                        <datalist id="brand-suggestions">
+                            <option value="Apple">
+                            <option value="Samsung">
+                            <option value="Dell">
+                            <option value="HP">
+                            <option value="Lenovo">
+                            <option value="Asus">
+                            <option value="Acer">
+                            <option value="Xiaomi">
+                            <option value="OnePlus">
+                            <option value="Google">
+                            <option value="Sony">
+                            <option value="LG">
+                            <option value="Motorola">
+                        </datalist>
+                        <div class="form-text">Device manufacturer or brand name.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="model" class="form-label">Model <span class="required">*</span></label>
+                        <input type="text"
+                               class="form-control"
+                               id="model"
+                               name="model"
+                               placeholder="e.g. iPhone 14 Pro, Galaxy S23, XPS 15"
+                               value="{{ model|default('') }}"
+                               required>
+                        <div class="form-text">Exact device model or series.</div>
+                    </div>
+                </div>
+
+                <!-- Request Type & Part -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="request_type" class="form-label">Request Type <span class="required">*</span></label>
+                        <select class="form-select" id="request_type" name="request_type" required>
+                            <option value="Repair" {% if request_type == 'Repair' or not request_type %}selected{% endif %}>Repair (Fix my device)</option>
+                            <option value="Resell" {% if request_type == 'Resell' %}selected{% endif %}>Resell (Sell device to centre)</option>
+                        </select>
+                        <div class="form-text">Choose whether you need a repair or want to sell.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="part" class="form-label">Part / Component Affected <span class="required">*</span></label>
+                        <select class="form-select" id="part" name="part" required>
+                            <option value="" disabled {% if not part %}selected{% endif %}>-- Select damaged/affected part --</option>
+                            <option value="Screen / Display" {% if part == 'Screen / Display' %}selected{% endif %}>Screen / Display</option>
+                            <option value="Battery" {% if part == 'Battery' %}selected{% endif %}>Battery</option>
+                            <option value="Motherboard / Logic Board" {% if part == 'Motherboard / Logic Board' %}selected{% endif %}>Motherboard / Logic Board</option>
+                            <option value="Camera" {% if part == 'Camera' %}selected{% endif %}>Camera (Front / Rear)</option>
+                            <option value="Charging Port" {% if part == 'Charging Port' %}selected{% endif %}>Charging Port / Power Connector</option>
+                            <option value="Speaker / Microphone" {% if part == 'Speaker / Microphone' %}selected{% endif %}>Speaker / Audio / Microphone</option>
+                            <option value="Keyboard / Trackpad" {% if part == 'Keyboard / Trackpad' %}selected{% endif %}>Keyboard / Trackpad / Buttons</option>
+                            <option value="Body / Back Glass" {% if part == 'Body / Back Glass' %}selected{% endif %}>Body / Back Glass / Housing</option>
+                            <option value="Software / OS Issue" {% if part == 'Software / OS Issue' %}selected{% endif %}>Software / OS / Boot Issue</option>
+                            <option value="Full Device" {% if part == 'Full Device' %}selected{% endif %}>Complete Device (General Inspection)</option>
+                            <option value="Other" {% if part == 'Other' %}selected{% endif %}>Other / Unspecified</option>
+                        </select>
+                        <div class="form-text">Primary component needing attention.</div>
+                    </div>
+                </div>
+
+                <!-- Issue Description -->
+                <div class="mb-4">
+                    <label for="issue_description" class="form-label">Issue Description <span class="required">*</span></label>
+                    <textarea class="form-control"
+                              id="issue_description"
+                              name="issue_description"
+                              rows="4"
+                              placeholder="Describe the issue in detail (e.g. screen flickers with green lines, battery drains in 1 hour, liquid spill, device does not power on)..."
+                              required>{{ issue_description|default('') }}</textarea>
+                    <div class="form-text">Minimum 10 characters. Provide any symptoms, damage context, or history.</div>
+                </div>
+
+                <!-- Status Note -->
+                <div class="p-3 mb-4 rounded-2" style="background: #f7faf8; border: 1px solid var(--line);">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <span style="font-size: .84rem; color: var(--ink);">
+                            Initial Request Status:
+                        </span>
+                        <span class="badge-preview">
+                            ● Pickup Pending
+                        </span>
+                    </div>
+                    <small class="text-muted d-block mt-1" style="font-size: .78rem;">
+                        Once submitted, our admin team will review and assign a certified delivery agent to pick up your device.
+                    </small>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex align-items-center justify-content-between pt-2">
+                    <a href="{{ url_for('customer_dashboard') }}" class="btn btn-outline-secondary px-3" style="font-size: .88rem; min-height: 44px; display: inline-flex; align-items: center;">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-submit-req">
+                        Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar / Guidelines -->
+        <aside>
+            <div class="sidebar-card">
+                <h3><span>🚚</span> What Happens Next?</h3>
+                <div class="step-item">
+                    <span class="step-number">1</span>
+                    <div class="step-info">
+                        <strong>Pickup Pending</strong>
+                        <small>Your request enters our centre queue for agent assignment.</small>
+                    </div>
+                </div>
+                <div class="step-item">
+                    <span class="step-number">2</span>
+                    <div class="step-info">
+                        <strong>Doorstep Pickup</strong>
+                        <small>An assigned delivery agent collects your device safely with an OTP receipt.</small>
+                    </div>
+                </div>
+                <div class="step-item">
+                    <span class="step-number">3</span>
+                    <div class="step-info">
+                        <strong>Diagnosis & Repair</strong>
+                        <small>Certified technicians inspect and service the requested parts.</small>
+                    </div>
+                </div>
+                <div class="step-item">
+                    <span class="step-number">4</span>
+                    <div class="step-info">
+                        <strong>Returned to You</strong>
+                        <small>Safe delivery back to your registered address with warranty.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-card" style="background: #fafbf9;">
+                <h3 style="font-size: .92rem;"><span>🔒</span> Our Guarantee</h3>
+                <p style="font-size: .8rem; color: var(--muted); margin: 0; line-height: 1.6;">
+                    Genuine components, secure data handling, and real-time status tracking at every step.
+                </p>
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

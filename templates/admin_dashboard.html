@@ -2,6 +2,20 @@
 {% block title %}Admin Dashboard – Remote Repair Centre{% endblock %}
 
 {% block content %}
+<style>
+    .workspace-tile-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .workspace-tile-link:hover .workspace-tile {
+        border-color: var(--moss);
+        box-shadow: 0 6px 18px rgba(47, 107, 91, .12);
+        transform: translateY(-2px);
+    }
+</style>
+
 <section class="dashboard-page" style="--role-accent: #b98a42;">
     <header class="dashboard-heading">
         <div>
@@ -9,8 +23,14 @@
             <h1>Operations overview</h1>
             <p>Welcome, {{ session.get('name', 'Admin') }}. Your centre workspace is ready.</p>
         </div>
-        <span class="dashboard-role">Administrator</span>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('admin_requests') }}" class="btn btn-sm" style="background: var(--moss); color: #fff; font-weight: 700; padding: .45rem .9rem;">
+                Manage Requests
+            </a>
+            <span class="dashboard-role">Administrator</span>
+        </div>
     </header>
+
     <section class="workspace-panel" aria-labelledby="admin-queue-title">
         <div class="workspace-panel-head">
             <h2 id="admin-queue-title">Centre activity</h2>
@@ -23,11 +43,22 @@
                     <h3>User directory</h3>
                     <p>Registered customer, shop, and delivery accounts.</p>
                 </article>
-                <article class="workspace-tile">
-                    <span>Service</span>
-                    <h3>Repair queue</h3>
-                    <p>Repair requests and their current progress.</p>
-                </article>
+
+                <a href="{{ url_for('admin_requests') }}" class="workspace-tile-link">
+                    <article class="workspace-tile" style="border-left: 3px solid var(--moss); background: #fdfefe;">
+                        <span style="color: var(--moss);">Service & Logistics</span>
+                        <h3 style="color: var(--forest);">Repair Queue &rarr;</h3>
+                        <p>
+                            {% if total_requests is defined %}
+                                <strong>{{ total_requests }}</strong> total requests &bull;
+                                <span style="color: #b26a15; font-weight: 700;">{{ pending_requests }} pending pickup</span>.
+                            {% else %}
+                                View and assign delivery agents to customer repair and resell requests.
+                            {% endif %}
+                        </p>
+                    </article>
+                </a>
+
                 <article class="workspace-tile">
                     <span>Centre</span>
                     <h3>System settings</h3>
@@ -39,4 +70,3 @@
     <p class="workspace-note">Operational tools will appear here as the centre workflows are connected.</p>
 </section>
 {% endblock %}
-

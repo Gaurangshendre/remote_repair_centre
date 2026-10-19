@@ -41,3 +41,35 @@ CREATE POLICY "Allow all for service role" ON users
     USING (true)
     WITH CHECK (true);
 
+-- =============================================================
+-- Requests table
+-- =============================================================
+CREATE TABLE IF NOT EXISTS requests (
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY,
+    request_id          UUID            NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID            NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    company             VARCHAR(100)    NOT NULL,
+    model               VARCHAR(100)    NOT NULL,
+    request_type        VARCHAR(20)     NOT NULL CHECK (request_type IN ('Repair', 'Resell')),
+    part                VARCHAR(100)    NOT NULL,
+    issue_description   TEXT            NOT NULL,
+    status              VARCHAR(50)     NOT NULL DEFAULT 'Pickup Pending',
+    delivery_boy_id     UUID            REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT now()
+);
+
+-- Index for fast queries by user, status, and delivery person
+CREATE INDEX IF NOT EXISTS idx_requests_user_id ON requests (user_id);
+CREATE INDEX IF NOT EXISTS idx_requests_status ON requests (status);
+CREATE INDEX IF NOT EXISTS idx_requests_delivery_boy ON requests (delivery_boy_id);
+CREATE INDEX IF NOT EXISTS idx_requests_created_at ON requests (created_at DESC);
+
+-- Row Level Security (RLS) for requests
+ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all for service role on requests" ON requests
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+

@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% block title %}My Requests – Remote Repair Centre{% endblock %}
+
+{% block content %}
+<style>
+    .my-requests-page { max-width: 1140px; margin: 1.5rem auto 3.5rem; }
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.75rem;
+    }
+    .page-header h1 {
+        margin: 0;
+        font-family: "Manrope", sans-serif;
+        font-size: clamp(1.6rem, 3vw, 2.1rem);
+        font-weight: 800;
+        color: var(--forest);
+    }
+    .page-header p {
+        margin: .3rem 0 0;
+        color: var(--muted);
+        font-size: .9rem;
+    }
+    .btn-create-req {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        background: var(--moss);
+        color: #fff;
+        font-weight: 700;
+        font-size: .88rem;
+        padding: .65rem 1.25rem;
+        border-radius: 5px;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(47, 107, 91, .2);
+        transition: background .15s ease, transform .1s ease;
+    }
+    .btn-create-req:hover {
+        background: var(--forest);
+        color: #fff;
+    }
+    .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+    }
+    .stat-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 4px 12px rgba(24, 48, 42, .03);
+    }
+    .stat-card .label {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--muted);
+        display: block;
+    }
+    .stat-card .value {
+        font-family: "Manrope", sans-serif;
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--ink);
+        margin-top: .2rem;
+        display: block;
+    }
+    .requests-table-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(24, 48, 42, .04);
+        overflow: hidden;
+    }
+    .table-responsive {
+        margin: 0;
+    }
+    .custom-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: collapse;
+    }
+    .custom-table th {
+        background: #f7faf8;
+        color: #4b625b;
+        font-size: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        padding: 1rem 1.15rem;
+        border-bottom: 1px solid var(--line);
+        white-space: nowrap;
+    }
+    .custom-table td {
+        padding: 1.1rem 1.15rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #edf1ee;
+        font-size: .88rem;
+    }
+    .custom-table tr:last-child td {
+        border-bottom: none;
+    }
+    .custom-table tr:hover td {
+        background: #fafcfb;
+    }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .3rem .7rem;
+        border-radius: 4px;
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+        white-space: nowrap;
+    }
+    .status-badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    /* Status Color Variants */
+    .status-pickup-pending { background: #fef7ec; color: #b26a15; border: 1px solid #f6deb6; }
+    .status-pickup-assigned { background: #eff6ff; color: #1e62d0; border: 1px solid #bfdbfe; }
+    .status-picked-up { background: #f3f0ff; color: #6941c6; border: 1px solid #ddd6fe; }
+    .status-under-inspection { background: #ecfeff; color: #088ab2; border: 1px solid #a5f3fc; }
+    .status-repair-in-progress { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-repaired { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .status-out-for-delivery { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+    .status-delivered { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+    .status-cancelled { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .status-default { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+
+    .req-type-pill {
+        display: inline-block;
+        padding: .2rem .55rem;
+        border-radius: 3px;
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .req-type-repair { background: #e6f4ea; color: #137333; }
+    .req-type-resell { background: #fce8e6; color: #c5221f; }
+
+    .empty-container {
+        padding: 3.5rem 2rem;
+        text-align: center;
+    }
+    .empty-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 1.25rem;
+        background: #eef4f1;
+        color: var(--moss);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 1.5rem;
+    }
+    .empty-container h2 {
+        font-family: "Manrope", sans-serif;
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin: 0 0 .5rem;
+    }
+    .empty-container p {
+        color: var(--muted);
+        font-size: .9rem;
+        max-width: 440px;
+        margin: 0 auto 1.5rem;
+    }
+    .agent-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .78rem;
+        color: #3b524c;
+        background: #f0f4f2;
+        padding: .25rem .5rem;
+        border-radius: 4px;
+    }
+</style>
+
+<section class="my-requests-page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">CUSTOMER WORKSPACE</p>
+            <h1>My Repair & Resell Requests</h1>
+            <p>Track live status updates and pickup schedules for all your devices.</p>
+        </div>
+        <a href="{{ url_for('new_request') }}" class="btn-create-req">
+            <span>+</span> Open New Request
+        </a>
+    </div>
+
+    <!-- Quick Stats -->
+    {% set total_count = requests|length %}
+    {% set pending_count = requests|selectattr('status', 'equalto', 'Pickup Pending')|list|length %}
+    {% set in_progress_count = requests|selectattr('status', 'in', ['Pickup Assigned', 'Picked Up', 'Under Inspection', 'Repair in Progress'])|list|length %}
+    {% set completed_count = requests|selectattr('status', 'in', ['Repaired', 'Delivered'])|list|length %}
+
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span class="label">Total Requests</span>
+            <span class="value">{{ total_count }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Pending Pickup</span>
+            <span class="value" style="color: #b26a15;">{{ pending_count }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">In Progress</span>
+            <span class="value" style="color: #1e62d0;">{{ in_progress_count }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Completed</span>
+            <span class="value" style="color: #166534;">{{ completed_count }}</span>
+        </div>
+    </div>
+
+    <!-- Requests Table or Empty State -->
+    <div class="requests-table-card">
+        {% if requests and requests|length > 0 %}
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Req ID</th>
+                        <th>Device Details</th>
+                        <th>Type</th>
+                        <th>Affected Part</th>
+                        <th>Issue Description</th>
+                        <th>Status</th>
+                        <th>Delivery Agent</th>
+                        <th>Date Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>
+                            <strong style="color: var(--forest); font-family: monospace; font-size: .84rem;">
+                                #{{ req.request_id[:8]|upper }}
+                            </strong>
+                        </td>
+                        <td>
+                            <div style="font-weight: 700; color: var(--ink);">{{ req.company }}</div>
+                            <small style="color: var(--muted); font-size: .8rem;">{{ req.model }}</small>
+                        </td>
+                        <td>
+                            <span class="req-type-pill {% if req.request_type == 'Repair' %}req-type-repair{% else %}req-type-resell{% endif %}">
+                                {{ req.request_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="font-weight: 600; font-size: .84rem; color: #2e4a42;">
+                                {{ req.part }}
+                            </span>
+                        </td>
+                        <td style="max-width: 260px;">
+                            <div style="color: #3b504a; font-size: .83rem; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="{{ req.issue_description }}">
+                                {{ req.issue_description }}
+                            </div>
+                        </td>
+                        <td>
+                            {% set status_slug = req.status|lower|replace(' ', '-') %}
+                            {% if status_slug == 'pickup-pending' %}
+                                <span class="status-badge status-pickup-pending">{{ req.status }}</span>
+                            {% elif status_slug == 'pickup-assigned' %}
+                                <span class="status-badge status-pickup-assigned">{{ req.status }}</span>
+                            {% elif status_slug == 'picked-up' %}
+                                <span class="status-badge status-picked-up">{{ req.status }}</span>
+                            {% elif status_slug == 'under-inspection' %}
+                                <span class="status-badge status-under-inspection">{{ req.status }}</span>
+                            {% elif status_slug == 'repair-in-progress' %}
+                                <span class="status-badge status-repair-in-progress">{{ req.status }}</span>
+                            {% elif status_slug == 'repaired' %}
+                                <span class="status-badge status-repaired">{{ req.status }}</span>
+                            {% elif status_slug == 'out-for-delivery' %}
+                                <span class="status-badge status-out-for-delivery">{{ req.status }}</span>
+                            {% elif status_slug == 'delivered' %}
+                                <span class="status-badge status-delivered">{{ req.status }}</span>
+                            {% elif status_slug == 'cancelled' %}
+                                <span class="status-badge status-cancelled">{{ req.status }}</span>
+                            {% else %}
+                                <span class="status-badge status-default">{{ req.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.delivery_boy_id and delivery_map.get(req.delivery_boy_id) %}
+                                {% set db = delivery_map.get(req.delivery_boy_id) %}
+                                <div class="agent-pill" title="Mobile: {{ db.mobile }}">
+                                    <span>🚴</span>
+                                    <span>{{ db.name }}</span>
+                                </div>
+                            {% else %}
+                                <span style="color: #94a39e; font-size: .78rem; font-style: italic;">
+                                    Not assigned yet
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td style="color: var(--muted); font-size: .8rem; white-space: nowrap;">
+                            {{ req.created_at[:10] if req.created_at else 'Recent' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-container">
+            <div class="empty-icon">📱</div>
+            <h2>No Service Requests Yet</h2>
+            <p>You haven't submitted any repair or resell requests yet. Need a phone screen replaced, laptop serviced, or battery swapped?</p>
+            <a href="{{ url_for('new_request') }}" class="btn-create-req">
+                <span>+</span> Submit Your First Request
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
