@@ -162,7 +162,7 @@
                 <p>Submit your repair or resell request for doorstep pickup and certified diagnosis.</p>
             </div>
 
-            <form action="{{ url_for('new_request') }}" method="POST" class="form-panel-body" novalidate>
+            <form action="{{ url_for('new_request') }}" method="POST" enctype="multipart/form-data" class="form-panel-body" novalidate>
                 <!-- Company & Model -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
@@ -213,12 +213,16 @@
                             <option value="Repair" {% if request_type == 'Repair' or not request_type %}selected{% endif %}>Repair (Fix my device)</option>
                             <option value="Resell" {% if request_type == 'Resell' %}selected{% endif %}>Resell (Sell device to centre)</option>
                         </select>
-                        <div class="form-text">Choose whether you need a repair or want to sell.</div>
+                        <div class="form-text" id="request_type_help">Choose whether you need a repair or want to sell.</div>
                     </div>
                     <div class="col-md-6">
-                        <label for="part" class="form-label">Part / Component Affected <span class="required">*</span></label>
+                        <label for="part" class="form-label" id="part_label">
+                            <span id="part_label_text">{% if request_type == 'Resell' %}Part / Component to Resell{% else %}Part / Component Affected{% endif %}</span> <span class="required">*</span>
+                        </label>
                         <select class="form-select" id="part" name="part" required>
-                            <option value="" disabled {% if not part %}selected{% endif %}>-- Select damaged/affected part --</option>
+                            <option value="" disabled {% if not part %}selected{% endif %} id="part_default_option">
+                                {% if request_type == 'Resell' %}-- Select part / item to resell --{% else %}-- Select damaged/affected part --{% endif %}
+                            </option>
                             <option value="Screen / Display" {% if part == 'Screen / Display' %}selected{% endif %}>Screen / Display</option>
                             <option value="Battery" {% if part == 'Battery' %}selected{% endif %}>Battery</option>
                             <option value="Motherboard / Logic Board" {% if part == 'Motherboard / Logic Board' %}selected{% endif %}>Motherboard / Logic Board</option>
@@ -231,20 +235,56 @@
                             <option value="Full Device" {% if part == 'Full Device' %}selected{% endif %}>Complete Device (General Inspection)</option>
                             <option value="Other" {% if part == 'Other' %}selected{% endif %}>Other / Unspecified</option>
                         </select>
-                        <div class="form-text">Primary component needing attention.</div>
+                        <div class="form-text" id="part_help">
+                            {% if request_type == 'Resell' %}Component or device you are looking to sell.{% else %}Primary component needing attention.{% endif %}
+                        </div>
                     </div>
                 </div>
 
-                <!-- Issue Description -->
+                <!-- Description (Issue Description for Repair, Part Description for Resell) -->
                 <div class="mb-4">
-                    <label for="issue_description" class="form-label">Issue Description <span class="required">*</span></label>
+                    <label for="issue_description" class="form-label" id="description_label">
+                        <span id="description_label_text">{% if request_type == 'Resell' %}Part Description{% else %}Issue Description{% endif %}</span> <span class="required">*</span>
+                    </label>
                     <textarea class="form-control"
                               id="issue_description"
                               name="issue_description"
                               rows="4"
-                              placeholder="Describe the issue in detail (e.g. screen flickers with green lines, battery drains in 1 hour, liquid spill, device does not power on)..."
+                              placeholder="{% if request_type == 'Resell' %}Describe the part or device condition in detail (e.g. original OEM screen in mint condition, battery health 90%, cosmetic condition, warranty, accessories included)...{% else %}Describe the issue in detail (e.g. screen flickers with green lines, battery drains in 1 hour, liquid spill, device does not power on)...{% endif %}"
                               required>{{ issue_description|default('') }}</textarea>
-                    <div class="form-text">Minimum 10 characters. Provide any symptoms, damage context, or history.</div>
+                    <div class="form-text" id="description_help">
+                        {% if request_type == 'Resell' %}Minimum 10 characters. Provide part condition, technical specs, or device state.{% else %}Minimum 10 characters. Provide any symptoms, damage context, or history.{% endif %}
+                    </div>
+                </div>
+
+                <!-- Photo Upload for Resell Validation -->
+                <div class="mb-4" id="photo_section" {% if request_type != 'Resell' %}style="display: none;"{% endif %}>
+                    <label for="part_photo" class="form-label d-flex align-items-center justify-content-between flex-wrap gap-1">
+                        <span>
+                            <span id="photo_label_text">Part Photo for Validation</span>
+                            <span class="required" id="photo_required_star">*</span>
+                        </span>
+                        <small class="text-muted" style="font-size: .78rem; font-weight: 500;">Clear picture of part & condition</small>
+                    </label>
+                    <input type="file"
+                           class="form-control"
+                           id="part_photo"
+                           name="part_photo"
+                           accept="image/png, image/jpeg, image/jpg, image/webp"
+                           {% if request_type == 'Resell' %}required{% endif %}>
+                    <div class="form-text" id="photo_help">
+                        Upload a clear photo of the part to validate its condition, authenticity, and cosmetic grade (JPG, PNG, WEBP, max 5MB).
+                    </div>
+                    <!-- Photo preview thumbnail -->
+                    <div id="photo_preview_wrap" class="mt-2" style="display: none;">
+                        <div class="d-inline-flex flex-column align-items-start p-2 rounded-2" style="background: #f4f7f5; border: 1px solid #dce5df;">
+                            <img id="photo_preview_img" src="" alt="Part preview" style="max-height: 140px; max-width: 220px; border-radius: 4px; object-fit: cover;">
+                            <div class="d-flex align-items-center justify-content-between w-100 mt-1 gap-2">
+                                <small id="photo_preview_name" class="text-muted text-truncate" style="max-width: 150px; font-size: .75rem;"></small>
+                                <button type="button" id="photo_remove_btn" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" style="font-size: .75rem;">✕ Remove</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Status Note -->
@@ -317,4 +357,96 @@
         </aside>
     </div>
 </section>
+
+<script>
+    (() => {
+        const requestTypeSelect = document.getElementById("request_type");
+        const partLabelText = document.getElementById("part_label_text");
+        const partDefaultOption = document.getElementById("part_default_option");
+        const partHelp = document.getElementById("part_help");
+        const descriptionLabelText = document.getElementById("description_label_text");
+        const issueDescriptionTextarea = document.getElementById("issue_description");
+        const descriptionHelp = document.getElementById("description_help");
+        const photoSection = document.getElementById("photo_section");
+        const photoInput = document.getElementById("part_photo");
+        const photoRequiredStar = document.getElementById("photo_required_star");
+        const previewWrap = document.getElementById("photo_preview_wrap");
+        const previewImg = document.getElementById("photo_preview_img");
+        const previewName = document.getElementById("photo_preview_name");
+        const removeBtn = document.getElementById("photo_remove_btn");
+
+        function updateFormForRequestType() {
+            if (!requestTypeSelect) return;
+            const isResell = requestTypeSelect.value === "Resell";
+            if (isResell) {
+                if (partLabelText) partLabelText.textContent = "Part / Component to Resell";
+                if (partDefaultOption) partDefaultOption.textContent = "-- Select part / item to resell --";
+                if (partHelp) partHelp.textContent = "Component or device you are looking to sell.";
+                if (descriptionLabelText) descriptionLabelText.textContent = "Part Description";
+                if (issueDescriptionTextarea) {
+                    issueDescriptionTextarea.placeholder = "Describe the part or device condition in detail (e.g. original OEM screen in mint condition, battery health 90%, cosmetic condition, warranty, accessories included)...";
+                }
+                if (descriptionHelp) {
+                    descriptionHelp.textContent = "Minimum 10 characters. Provide part condition, technical specs, or device state.";
+                }
+                if (photoSection) photoSection.style.display = "block";
+                if (photoInput) photoInput.required = true;
+                if (photoRequiredStar) photoRequiredStar.style.display = "inline";
+            } else {
+                if (partLabelText) partLabelText.textContent = "Part / Component Affected";
+                if (partDefaultOption) partDefaultOption.textContent = "-- Select damaged/affected part --";
+                if (partHelp) partHelp.textContent = "Primary component needing attention.";
+                if (descriptionLabelText) descriptionLabelText.textContent = "Issue Description";
+                if (issueDescriptionTextarea) {
+                    issueDescriptionTextarea.placeholder = "Describe the issue in detail (e.g. screen flickers with green lines, battery drains in 1 hour, liquid spill, device does not power on)...";
+                }
+                if (descriptionHelp) {
+                    descriptionHelp.textContent = "Minimum 10 characters. Provide any symptoms, damage context, or history.";
+                }
+                if (photoSection) photoSection.style.display = "none";
+                if (photoInput) {
+                    photoInput.required = false;
+                    photoInput.value = "";
+                }
+                if (photoRequiredStar) photoRequiredStar.style.display = "none";
+                if (previewWrap) previewWrap.style.display = "none";
+            }
+        }
+
+        if (photoInput) {
+            photoInput.addEventListener("change", function () {
+                const file = this.files && this.files[0];
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert("File size exceeds 5MB. Please choose a smaller photo.");
+                        this.value = "";
+                        if (previewWrap) previewWrap.style.display = "none";
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        if (previewImg) previewImg.src = e.target.result;
+                        if (previewName) previewName.textContent = file.name;
+                        if (previewWrap) previewWrap.style.display = "block";
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    if (previewWrap) previewWrap.style.display = "none";
+                }
+            });
+        }
+
+        if (removeBtn && photoInput) {
+            removeBtn.addEventListener("click", function () {
+                photoInput.value = "";
+                if (previewWrap) previewWrap.style.display = "none";
+            });
+        }
+
+        if (requestTypeSelect) {
+            requestTypeSelect.addEventListener("change", updateFormForRequestType);
+            updateFormForRequestType();
+        }
+    })();
+</script>
 {% endblock %}

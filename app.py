@@ -13,11 +13,13 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
 from supabase import create_client, Client
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 # ---------------------------------------------------------------------------
 # Load environment variables
@@ -29,6 +31,12 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "rrc-secret-key-change-in-production")
+
+UPLOAD_FOLDER = os.path.join(app.root_path, "statics", "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
+ALLOWED_PHOTO_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
 SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
@@ -347,6 +355,8 @@ def new_request():
         part = request.form.get("part", "").strip()
         issue_description = request.form.get("issue_description", "").strip()
 
+        part_photo = request.files.get("part_photo")
+
         errors = []
         if not company or len(company) < 2 or len(company) > 100:
             errors.append("Company/brand name must be between 2 and 100 characters.")
@@ -355,9 +365,21 @@ def new_request():
         if request_type not in ("Repair", "Resell"):
             errors.append("Request type must be either 'Repair' or 'Resell'.")
         if not part or len(part) < 2 or len(part) > 100:
-            errors.append("Please select or specify the affected part.")
+            errors.append("Please select or specify the part to resell." if request_type == "Resell" else "Please select or specify the affected part.")
         if not issue_description or len(issue_description) < 10 or len(issue_description) > 2000:
-            errors.append("Issue description must be between 10 and 2000 characters.")
+            errors.append("Part description must be between 10 and 2000 characters." if request_type == "Resell" else "Issue description must be between 10 and 2000 characters.")
+
+        if request_type == "Resell":
+            if not part_photo or not part_photo.filename:
+                errors.append("Please upload a photo of the part for validation.")
+            else:
+                ext = part_photo.filename.rsplit(".", 1)[-1].lower() if "." in part_photo.filename else ""
+                if ext not in ALLOWED_PHOTO_EXTENSIONS:
+                    errors.append("Photo must be a valid image format (PNG, JPG, JPEG, or WEBP).")
+        elif part_photo and part_photo.filename:
+            ext = part_photo.filename.rsplit(".", 1)[-1].lower() if "." in part_photo.filename else ""
+            if ext not in ALLOWED_PHOTO_EXTENSIONS:
+                errors.append("Photo must be a valid image format (PNG, JPG, JPEG, or WEBP).")
 
         if errors:
             for err in errors:
@@ -371,6 +393,17 @@ def new_request():
                 issue_description=issue_description,
             )
 
+        photo_url = None
+        if part_photo and part_photo.filename:
+            safe_name = f"{uuid.uuid4().hex[:12]}_{secure_filename(part_photo.filename)}"
+            save_path = os.path.join(app.config["UPLOAD_FOLDER"], safe_name)
+            part_photo.save(save_path)
+            photo_url = f"/uploads/{safe_name}"
+
+        final_description = (
+            f"{issue_description}\n\n[Photo: {photo_url}]" if photo_url else issue_description
+        )
+
         new_req_id = str(uuid.uuid4())
         req_doc = {
             "request_id": new_req_id,
@@ -379,7 +412,7 @@ def new_request():
             "model": model,
             "request_type": request_type,
             "part": part,
-            "issue_description": issue_description,
+            "issue_description": final_description,
             "status": "Pickup Pending",
             "delivery_boy_id": None,
         }
@@ -403,6 +436,12 @@ def new_request():
             )
 
     return render_template("new_request.html", request_type="Repair")
+
+
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
+    """Serve uploaded photos."""
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
 @app.route("/customer/requests")

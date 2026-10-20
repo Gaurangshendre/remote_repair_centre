@@ -5,4 +5,6 @@ __pycache__/
 database.db
 .env
 !.env.example
+statics/uploads/*
+!statics/uploads/.gitkeep
 

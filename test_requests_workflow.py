@@ -1,5 +1,6 @@
 """Test suite for requests table schema, validation, new request, my requests, admin requests, and access control."""
 
+import io
 import unittest
 from unittest.mock import MagicMock, patch
 import uuid
@@ -110,6 +111,81 @@ class TestRequestsWorkflow(unittest.TestCase):
         self.assertIn("Request type must be either &#39;Repair&#39; or &#39;Resell&#39;.", html)
         self.assertIn("Please select or specify the affected part.", html)
         self.assertIn("Issue description must be between 10 and 2000 characters.", html)
+
+    def test_resell_request_labels_and_validation(self):
+        """Resell request displays 'Part Description' and validates resell specific messages and photo requirement."""
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = str(uuid.uuid4())
+            sess["role"] = "customer"
+            sess["name"] = "Test Customer"
+
+        # Missing part, description, and photo for Resell
+        resp = self.client.post("/customer/requests/new", data={
+            "company": "Samsung",
+            "model": "Galaxy S22",
+            "request_type": "Resell",
+            "part": "",
+            "issue_description": "short",
+        }, follow_redirects=True)
+
+        self.assertEqual(resp.status_code, 200)
+        html = resp.get_data(as_text=True)
+        self.assertIn("Please select or specify the part to resell.", html)
+        self.assertIn("Part description must be between 10 and 2000 characters.", html)
+        self.assertIn("Please upload a photo of the part for validation.", html)
+        self.assertIn("Part Description", html)
+        self.assertIn("Part / Component to Resell", html)
+
+        # Invalid photo extension
+        resp_invalid = self.client.post("/customer/requests/new", data={
+            "company": "Samsung",
+            "model": "Galaxy S22",
+            "request_type": "Resell",
+            "part": "Screen / Display",
+            "issue_description": "Original working AMOLED display with no scratches.",
+            "part_photo": (io.BytesIO(b"fake-pdf-content"), "screen.pdf"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+
+        self.assertEqual(resp_invalid.status_code, 200)
+        html_invalid = resp_invalid.get_data(as_text=True)
+        self.assertIn("Photo must be a valid image format (PNG, JPG, JPEG, or WEBP).", html_invalid)
+
+    def test_resell_request_saves_with_uploaded_photo(self):
+        """Valid Resell request saves with photo reference and 'Pickup Pending'."""
+        user_uuid = str(uuid.uuid4())
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = user_uuid
+            sess["role"] = "customer"
+            sess["name"] = "Test Customer"
+
+        inserted_docs = []
+
+        def mock_insert(doc):
+            inserted_docs.append(doc)
+            mock_res = MagicMock()
+            mock_res.execute.return_value = MagicMock(data=[doc])
+            return mock_res
+
+        with patch.object(flask_app.supabase, "table") as mock_table:
+            mock_table.return_value.insert.side_effect = mock_insert
+            mock_table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value.data = []
+
+            resp = self.client.post("/customer/requests/new", data={
+                "company": "Apple",
+                "model": "iPhone 13",
+                "request_type": "Resell",
+                "part": "Battery",
+                "issue_description": "Original OEM battery with 88% battery health in great condition.",
+                "part_photo": (io.BytesIO(b"test-image-binary-data"), "battery_health.jpg"),
+            }, content_type="multipart/form-data", follow_redirects=True)
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(len(inserted_docs), 1)
+            saved = inserted_docs[0]
+            self.assertEqual(saved["user_id"], user_uuid)
+            self.assertEqual(saved["request_type"], "Resell")
+            self.assertEqual(saved["part"], "Battery")
+            self.assertIn("[Photo: /uploads/", saved["issue_description"])
 
     def test_new_request_saves_with_default_status_and_user_id(self):
         """Valid submission saves with 'Pickup Pending' and logged-in user_id."""

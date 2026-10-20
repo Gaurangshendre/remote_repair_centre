@@ -55,8 +55,12 @@ CREATE TABLE IF NOT EXISTS requests (
     issue_description   TEXT            NOT NULL,
     status              VARCHAR(50)     NOT NULL DEFAULT 'Pickup Pending',
     delivery_boy_id     UUID            REFERENCES users(user_id) ON DELETE SET NULL,
+    photo_url           VARCHAR(500),
     created_at          TIMESTAMPTZ     NOT NULL DEFAULT now()
 );
+
+-- Optional migration for existing requests table:
+-- ALTER TABLE requests ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);
 
 -- Index for fast queries by user, status, and delivery person
 CREATE INDEX IF NOT EXISTS idx_requests_user_id ON requests (user_id);
