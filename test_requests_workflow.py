@@ -266,6 +266,58 @@ class TestRequestsWorkflow(unittest.TestCase):
             self.assertIn("Galaxy S23", html)
             self.assertIn("Battery", html)
             self.assertIn("Pickup Pending", html)
+            # Verify estimated pickup date trigger and modal
+            self.assertIn("pickup-estimate-trigger", html)
+            self.assertIn("pickupEstimateModal", html)
+
+    def test_pickup_pending_shows_estimated_pickup_date_5_to_7_days(self):
+        """Clicking pickup pending status column shows estimated date of pickup (after 5-7 days)."""
+        from app import calculate_pickup_estimate
+
+        # Unit test helper: 5 to 7 days calculation
+        est = calculate_pickup_estimate("2026-10-10T10:00:00Z")
+        self.assertEqual(est["start"], "15 Oct 2026")
+        self.assertEqual(est["end"], "17 Oct 2026")
+        self.assertEqual(est["range_text"], "Oct 15 – Oct 17, 2026")
+
+        # Integration test with my_requests page
+        user_uuid = str(uuid.uuid4())
+        req_id = str(uuid.uuid4())
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = user_uuid
+            sess["role"] = "customer"
+            sess["name"] = "Alice Customer"
+
+        mock_requests = [
+            {
+                "request_id": req_id,
+                "user_id": user_uuid,
+                "company": "OnePlus",
+                "model": "11R",
+                "request_type": "Repair",
+                "part": "Screen / Display",
+                "issue_description": "Touch is flickering.",
+                "status": "Pickup Pending",
+                "delivery_boy_id": None,
+                "created_at": "2026-10-10T10:00:00Z",
+            }
+        ]
+
+        with patch.object(flask_app.supabase, "table") as mock_table:
+            mock_table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value.data = mock_requests
+
+            resp = self.client.get("/my-requests")
+            self.assertEqual(resp.status_code, 200)
+            html = resp.get_data(as_text=True)
+
+            # Check that pickup pending status column has interactive trigger and data attributes
+            self.assertIn("pickup-estimate-trigger", html)
+            self.assertIn("status-cell-clickable", html)
+            self.assertIn("data-estimate-range=\"Oct 15 – Oct 17, 2026\"", html)
+            self.assertIn("pickupEstimateModal", html)
+            self.assertIn("Estimated Pickup Schedule", html)
+            self.assertIn("5 to 7 days", html)
+
 
     # ------------------------------------------------------------------------
     # 5. Admin Page - List, Delivery Boy & Status Dropdowns

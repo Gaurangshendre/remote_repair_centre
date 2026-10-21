@@ -86,7 +86,9 @@
                         <div>
                             {% set status_slug = req.status|lower|replace(' ', '-') %}
                             {% if status_slug == 'pickup-pending' %}
-                                <span class="status-badge-sm status-pickup-pending">{{ req.status }}</span>
+                                <a href="{{ url_for('my_requests') }}" class="text-decoration-none" title="Estimated pickup window: {{ req.pickup_estimate.range_text if req.pickup_estimate else '5–7 days' }} from submission">
+                                    <span class="status-badge-sm status-pickup-pending" style="cursor: pointer;">{{ req.status }} 📅</span>
+                                </a>
                             {% elif status_slug == 'pickup-assigned' %}
                                 <span class="status-badge-sm status-pickup-assigned">{{ req.status }}</span>
                             {% elif status_slug == 'picked-up' %}

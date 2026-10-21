@@ -127,7 +127,225 @@
         border-radius: 50%;
         background: currentColor;
     }
-    /* Status Color Variants */
+
+    /* Status Color Variants & Interactive Pickup Pending */
+    .status-cell-clickable {
+        cursor: pointer;
+        transition: background-color .15s ease;
+    }
+    .status-cell-clickable:hover {
+        background-color: #fdfaf3 !important;
+    }
+    .status-badge.status-pickup-pending {
+        background: #fef7ec;
+        color: #b26a15;
+        border: 1px solid #f6deb6;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        user-select: none;
+    }
+    .status-badge.status-pickup-pending:hover {
+        background: #fdf0d5;
+        color: #853e08;
+        border-color: #d97706;
+        box-shadow: 0 4px 12px rgba(180, 83, 9, 0.18);
+        transform: translateY(-1px);
+    }
+    .status-badge.status-pickup-pending:active {
+        transform: translateY(0);
+    }
+    .status-badge.status-pickup-pending .estimate-pill-icon {
+        font-size: .75rem;
+        margin-left: .2rem;
+    }
+    .estimate-quick-sub {
+        display: flex;
+        align-items: center;
+        gap: .3rem;
+        font-size: .72rem;
+        font-weight: 600;
+        color: #9a6526;
+        margin-top: .3rem;
+    }
+    .estimate-quick-sub .dot-pulse {
+        width: 6px;
+        height: 6px;
+        background-color: #d97706;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse-dot 1.8s infinite ease-in-out;
+    }
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 0.4; transform: scale(0.85); }
+        50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Pickup Estimate Modal */
+    .pickup-modal .modal-content {
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        box-shadow: 0 24px 60px rgba(23, 59, 55, 0.2);
+        overflow: hidden;
+    }
+    .pickup-modal .modal-header {
+        background: linear-gradient(135deg, #173b37 0%, #205047 100%);
+        color: #fff;
+        padding: 1.25rem 1.5rem;
+        border-bottom: none;
+    }
+    .pickup-modal .modal-title {
+        font-family: "Manrope", sans-serif;
+        font-weight: 800;
+        font-size: 1.15rem;
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+    }
+    .pickup-modal .btn-close-white {
+        filter: brightness(0) invert(1);
+        opacity: 0.8;
+    }
+    .pickup-modal .btn-close-white:hover {
+        opacity: 1;
+    }
+    .pickup-hero {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1.5px solid #fde68a;
+        border-radius: 10px;
+        padding: 1.25rem 1.4rem;
+        margin-bottom: 1.25rem;
+        position: relative;
+    }
+    .pickup-hero .hero-tag {
+        font-size: .72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: #92400e;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        margin-bottom: .3rem;
+    }
+    .pickup-hero .hero-dates {
+        font-family: "Manrope", sans-serif;
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #78350f;
+        line-height: 1.2;
+    }
+    .pickup-hero .hero-window {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        background: #d97706;
+        color: #fff;
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .2rem .6rem;
+        border-radius: 999px;
+        margin-top: .45rem;
+    }
+    .pickup-hero .hero-desc {
+        font-size: .82rem;
+        color: #92400e;
+        margin-top: .6rem;
+        line-height: 1.45;
+    }
+    .modal-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: .75rem;
+        margin-bottom: 1.25rem;
+    }
+    .modal-grid-box {
+        background: #f8faf9;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: .75rem 1rem;
+    }
+    .modal-grid-box .lbl {
+        font-size: .7rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .modal-grid-box .val {
+        font-size: .88rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-top: .15rem;
+        word-break: break-word;
+    }
+    .pickup-timeline {
+        position: relative;
+        padding-left: 1.75rem;
+        margin-bottom: 1.25rem;
+    }
+    .pickup-timeline::before {
+        content: "";
+        position: absolute;
+        left: 9px;
+        top: 6px;
+        bottom: 6px;
+        width: 2px;
+        background: #d9e4dd;
+    }
+    .timeline-step {
+        position: relative;
+        padding-bottom: 1rem;
+    }
+    .timeline-step:last-child {
+        padding-bottom: 0;
+    }
+    .timeline-dot {
+        position: absolute;
+        left: -1.75rem;
+        top: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: .65rem;
+        background: #fff;
+        border: 2px solid #b5c7bd;
+        color: #6a7c74;
+    }
+    .timeline-step.completed .timeline-dot {
+        background: #059669;
+        border-color: #059669;
+        color: #fff;
+    }
+    .timeline-step.active .timeline-dot {
+        background: #d97706;
+        border-color: #d97706;
+        color: #fff;
+        box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25);
+    }
+    .timeline-body h6 {
+        font-size: .84rem;
+        font-weight: 700;
+        margin: 0 0 .15rem;
+        color: var(--ink);
+    }
+    .timeline-body p {
+        font-size: .78rem;
+        color: var(--muted);
+        margin: 0;
+        line-height: 1.35;
+    }
+    .prep-box {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: .85rem 1rem;
+        font-size: .8rem;
+        color: #166534;
+        line-height: 1.45;
+    }
+
     .status-pickup-pending { background: #fef7ec; color: #b26a15; border: 1px solid #f6deb6; }
     .status-pickup-assigned { background: #eff6ff; color: #1e62d0; border: 1px solid #bfdbfe; }
     .status-picked-up { background: #f3f0ff; color: #6941c6; border: 1px solid #ddd6fe; }
@@ -246,6 +464,7 @@
                 </thead>
                 <tbody>
                     {% for req in requests %}
+                    {% set status_slug = req.status|lower|replace(' ', '-') %}
                     <tr>
                         <td>
                             <strong style="color: var(--forest); font-family: monospace; font-size: .84rem;">
@@ -281,10 +500,33 @@
                                 </div>
                             {% endif %}
                         </td>
-                        <td>
-                            {% set status_slug = req.status|lower|replace(' ', '-') %}
+                        <td class="{% if status_slug == 'pickup-pending' %}status-cell-clickable pickup-estimate-trigger{% endif %}"
                             {% if status_slug == 'pickup-pending' %}
-                                <span class="status-badge status-pickup-pending">{{ req.status }}</span>
+                            data-req-id="{{ req.request_id[:8]|upper }}"
+                            data-company="{{ req.company }}"
+                            data-model="{{ req.model }}"
+                            data-part="{{ req.part }}"
+                            data-submitted="{{ req.pickup_estimate.submitted if req.pickup_estimate else (req.created_at[:10] if req.created_at else 'Recent') }}"
+                            data-estimate-start="{{ req.pickup_estimate.start if req.pickup_estimate else '' }}"
+                            data-estimate-end="{{ req.pickup_estimate.end if req.pickup_estimate else '' }}"
+                            data-estimate-range="{{ req.pickup_estimate.range_text if req.pickup_estimate else '' }}"
+                            data-created-at="{{ req.created_at or '' }}"
+                            tabindex="0"
+                            role="button"
+                            title="Click to view estimated date of pickup (5-7 days)"
+                            aria-label="Click to view estimated date of pickup (5-7 days) for request #{{ req.request_id[:8]|upper }}"
+                            {% endif %}>
+                            {% if status_slug == 'pickup-pending' %}
+                                <div class="d-inline-flex flex-column align-items-start">
+                                    <span class="status-badge status-pickup-pending">
+                                        {{ req.status }}
+                                        <span class="estimate-pill-icon" title="Estimated 5-7 days">📅</span>
+                                    </span>
+                                    <span class="estimate-quick-sub" title="Estimated pickup window: 5 to 7 days from submission">
+                                        <span class="dot-pulse"></span>
+                                        <span>Est: {{ req.pickup_estimate.range_text if req.pickup_estimate else '5–7 days' }}</span>
+                                    </span>
+                                </div>
                             {% elif status_slug == 'pickup-assigned' %}
                                 <span class="status-badge status-pickup-assigned">{{ req.status }}</span>
                             {% elif status_slug == 'picked-up' %}
@@ -338,4 +580,152 @@
         {% endif %}
     </div>
 </section>
+
+<!-- Estimated Date of Pickup Modal -->
+<div class="modal fade pickup-modal" id="pickupEstimateModal" tabindex="-1" aria-labelledby="pickupEstimateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pickupEstimateModalLabel">
+                    <span>📦</span>
+                    <span>Estimated Pickup Schedule</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Highlight Hero -->
+                <div class="pickup-hero">
+                    <div class="hero-tag">
+                        <span>📅</span>
+                        <span>Estimated Pickup Window</span>
+                    </div>
+                    <div class="hero-dates" id="modalEstimateRange">Calculating...</div>
+                    <div class="hero-window">
+                        <span>⏱️</span>
+                        <span>5 to 7 days from request submission</span>
+                    </div>
+                    <div class="hero-desc">
+                        Our verified delivery executive will be assigned and will visit your registered address during this estimated pickup window.
+                    </div>
+                </div>
+
+                <!-- Request & Device Details -->
+                <div class="modal-grid">
+                    <div class="modal-grid-box">
+                        <div class="lbl">Request ID</div>
+                        <div class="val" id="modalReqId" style="color: var(--forest); font-family: monospace;">#00000000</div>
+                    </div>
+                    <div class="modal-grid-box">
+                        <div class="lbl">Submission Date</div>
+                        <div class="val" id="modalSubmitted">--</div>
+                    </div>
+                    <div class="modal-grid-box">
+                        <div class="lbl">Device</div>
+                        <div class="val" id="modalDevice">--</div>
+                    </div>
+                    <div class="modal-grid-box">
+                        <div class="lbl">Affected Part</div>
+                        <div class="val" id="modalPart">--</div>
+                    </div>
+                </div>
+
+                <!-- Live Service Steps Timeline -->
+                <div class="pickup-timeline">
+                    <div class="timeline-step completed">
+                        <div class="timeline-dot">✓</div>
+                        <div class="timeline-body">
+                            <h6>Request Received</h6>
+                            <p>Your repair/resell request has been successfully logged.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-step active">
+                        <div class="timeline-dot">⏱</div>
+                        <div class="timeline-body">
+                            <h6>Courier Pickup Scheduled (Active)</h6>
+                            <p>Expected pickup window: <strong id="modalTimelineRange" style="color: #92400e;">After 5–7 days</strong>. Delivery executive will be assigned shortly.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-step">
+                        <div class="timeline-dot">🔧</div>
+                        <div class="timeline-body">
+                            <h6>Device Inspection & Service</h6>
+                            <p>Diagnostic testing at our certified repair centre.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-step">
+                        <div class="timeline-dot">🚀</div>
+                        <div class="timeline-body">
+                            <h6>Safe Return Delivery</h6>
+                            <p>Dispatched back to your doorstep after quality checks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pickup Preparation Tips -->
+                <div class="prep-box">
+                    <strong>💡 Tips before pickup:</strong>
+                    Ensure your device is backed up, remove any external SIM/memory cards, and keep any accompanying chargers or accessories handy if required.
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                <button type="button" class="btn btn-dark w-100 py-2 fw-semibold" style="background: var(--forest); border-color: var(--forest); border-radius: 6px;" data-bs-dismiss="modal">
+                    Got it, Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPickupEstimate(el) {
+    const trigger = el.closest('.pickup-estimate-trigger') || el;
+    const reqId = trigger.getAttribute('data-req-id') || '';
+    const company = trigger.getAttribute('data-company') || '';
+    const model = trigger.getAttribute('data-model') || '';
+    const part = trigger.getAttribute('data-part') || '';
+    const submitted = trigger.getAttribute('data-submitted') || 'Recent';
+    let estimateRange = trigger.getAttribute('data-estimate-range') || '';
+    const createdAt = trigger.getAttribute('data-created-at') || '';
+
+    if (!estimateRange) {
+        let baseDate = createdAt ? new Date(createdAt) : new Date();
+        if (isNaN(baseDate.getTime())) baseDate = new Date();
+        const start = new Date(baseDate);
+        start.setDate(start.getDate() + 5);
+        const end = new Date(baseDate);
+        end.setDate(end.getDate() + 7);
+        const opt = { month: 'short', day: 'numeric', year: 'numeric' };
+        estimateRange = `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString('en-US', opt)}`;
+    }
+
+    document.getElementById('modalReqId').textContent = reqId ? '#' + reqId : '--';
+    document.getElementById('modalDevice').textContent = (company + ' ' + model).trim() || 'Device';
+    document.getElementById('modalPart').textContent = part || 'General Service';
+    document.getElementById('modalSubmitted').textContent = submitted;
+    document.getElementById('modalEstimateRange').textContent = estimateRange;
+    document.getElementById('modalTimelineRange').textContent = estimateRange;
+
+    const modalEl = document.getElementById('pickupEstimateModal');
+    if (modalEl && window.bootstrap) {
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modalInstance.show();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach click and keyboard listeners to pickup pending status cells/badges
+    document.querySelectorAll('.pickup-estimate-trigger').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showPickupEstimate(this);
+        });
+        el.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                showPickupEstimate(this);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

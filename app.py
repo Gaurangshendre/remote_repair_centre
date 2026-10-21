@@ -4,6 +4,7 @@ import hmac
 import os
 import re
 import uuid
+from datetime import datetime, timedelta
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -286,6 +287,34 @@ def role_required(*allowed_roles):
     return decorator
 
 
+def calculate_pickup_estimate(created_str):
+    """Calculate estimated pickup date range (5 to 7 days from request date)."""
+    base_dt = None
+    if created_str:
+        try:
+            clean_str = str(created_str).replace("Z", "+00:00")
+            base_dt = datetime.fromisoformat(clean_str)
+        except Exception:
+            try:
+                base_dt = datetime.strptime(str(created_str)[:10], "%Y-%m-%d")
+            except Exception:
+                base_dt = datetime.now()
+    else:
+        base_dt = datetime.now()
+
+    start_dt = base_dt + timedelta(days=5)
+    end_dt = base_dt + timedelta(days=7)
+    return {
+        "start": start_dt.strftime("%d %b %Y"),
+        "end": end_dt.strftime("%d %b %Y"),
+        "start_iso": start_dt.strftime("%Y-%m-%d"),
+        "end_iso": end_dt.strftime("%Y-%m-%d"),
+        "range_text": f"{start_dt.strftime('%b %d')} – {end_dt.strftime('%b %d, %Y')}",
+        "days_window": "5–7 days",
+        "submitted": base_dt.strftime("%b %d, %Y"),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Dashboard routes (role-specific)
 # ---------------------------------------------------------------------------
@@ -303,6 +332,8 @@ def customer_dashboard():
             .execute()
         )
         recent_requests = res.data or []
+        for r in recent_requests:
+            r["pickup_estimate"] = calculate_pickup_estimate(r.get("created_at"))
     except Exception:
         recent_requests = []
     return render_template("customer_dashboard.html", recent_requests=recent_requests)
@@ -460,6 +491,8 @@ def my_requests():
             .execute()
         )
         requests_list = res.data or []
+        for req in requests_list:
+            req["pickup_estimate"] = calculate_pickup_estimate(req.get("created_at"))
 
         # Fetch delivery boys details for any assigned requests
         assigned_ids = list({r["delivery_boy_id"] for r in requests_list if r.get("delivery_boy_id")})
