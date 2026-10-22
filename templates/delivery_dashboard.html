@@ -2,12 +2,45 @@
 {% block title %}Delivery Dashboard – Remote Repair Centre{% endblock %}
 
 {% block content %}
+<style>
+    .assigned-stop-card {
+        padding: 1.25rem 1.4rem;
+        border-bottom: 1px solid var(--line);
+        background: #fff;
+        transition: background .15s ease;
+    }
+    .assigned-stop-card:last-child {
+        border-bottom: none;
+    }
+    .assigned-stop-card:hover {
+        background: #fafdfc;
+    }
+    .stop-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .5rem;
+        margin-bottom: .6rem;
+    }
+    .stop-status-badge {
+        font-size: .74rem;
+        font-weight: 700;
+        padding: .25rem .6rem;
+        border-radius: 4px;
+    }
+    .badge-pickup-assigned { background: #eff6ff; color: #1e62d0; border: 1px solid #bfdbfe; }
+    .badge-picked-up { background: #f3f0ff; color: #6941c6; border: 1px solid #ddd6fe; }
+    .badge-out-delivery { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+    .badge-delivered { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+</style>
+
 <section class="dashboard-page" style="--role-accent: #cf5b3c;">
     <header class="dashboard-heading">
         <div>
             <p class="eyebrow">FIELD OPERATIONS</p>
             <h1>Delivery workspace</h1>
-            <p>Welcome, {{ session.get('name', 'Delivery Partner') }}.</p>
+            <p>Welcome, {{ session.get('name', 'Delivery Partner') }}. Coordinate your doorstep stops below.</p>
         </div>
         <span class="dashboard-role">Delivery partner</span>
     </header>
@@ -15,14 +48,93 @@
         <section class="workspace-panel" aria-labelledby="delivery-route-title">
             <div class="workspace-panel-head">
                 <h2 id="delivery-route-title">Pickup &amp; delivery queue</h2>
-                <span class="panel-index">01 / ROUTE</span>
+                <span class="panel-index">
+                    {{ assigned_requests|length }} ASSIGNED STOP{% if assigned_requests|length != 1 %}S{% endif %}
+                </span>
             </div>
-            <div class="empty-state">
-                <span class="empty-mark" aria-hidden="true">GO</span>
-                <h3>No assigned stops to show</h3>
-                <p>Pickups and deliveries assigned to your account will appear in this queue.</p>
-            </div>
+
+            {% if assigned_requests and assigned_requests|length > 0 %}
+                <div>
+                    {% for req in assigned_requests %}
+                        {% set cust = user_map.get(req.user_id) %}
+                        <div class="assigned-stop-card">
+                            <div class="stop-header">
+                                <div>
+                                    <strong style="color: var(--forest); font-family: monospace;">#{{ req.request_id[:8]|upper }}</strong>
+                                    <span class="badge ms-2" style="background: #eef5f2; color: var(--forest); font-size: .72rem;">{{ req.request_type }}</span>
+                                </div>
+                                <div>
+                                    {% if req.status == 'Pickup Assigned' %}
+                                        <span class="stop-status-badge badge-pickup-assigned">Assigned for Pickup</span>
+                                    {% elif req.status == 'Picked Up' %}
+                                        <span class="stop-status-badge badge-picked-up">Device Picked Up</span>
+                                    {% elif req.status == 'Out for Delivery' %}
+                                        <span class="stop-status-badge badge-out-delivery">Out for Return Delivery</span>
+                                    {% elif req.status == 'Delivered' %}
+                                        <span class="stop-status-badge badge-delivered">Delivered</span>
+                                    {% else %}
+                                        <span class="stop-status-badge" style="background: #f3f4f6; color: #4b5563;">{{ req.status }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: .5rem;">
+                                <div>
+                                    <div style="font-size: .74rem; font-weight: 700; text-transform: uppercase; color: var(--muted);">Customer &amp; Location</div>
+                                    {% if cust %}
+                                        <div style="font-weight: 700; color: var(--ink); margin-top: .2rem;">{{ cust.name }}</div>
+                                        <div style="font-size: .82rem; margin-top: .15rem;">
+                                            📞 <a href="tel:{{ cust.mobile }}" style="color: var(--forest); font-weight: 600;">{{ cust.mobile }}</a>
+                                        </div>
+                                        <div style="font-size: .8rem; color: #5c7069; margin-top: .2rem;">
+                                            📍 {{ cust.address }}
+                                        </div>
+                                    {% else %}
+                                        <div style="font-size: .82rem; color: var(--muted); font-style: italic;">Customer details pending</div>
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    <div style="font-size: .74rem; font-weight: 700; text-transform: uppercase; color: var(--muted);">Device &amp; Service</div>
+                                    <div style="font-weight: 700; color: var(--ink); margin-top: .2rem;">{{ req.company }} {{ req.model }}</div>
+                                    <div style="font-size: .8rem; color: var(--forest); margin-top: .15rem;">🔧 {{ req.part }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Actions for Delivery Partner -->
+                            <div class="d-flex align-items-center gap-2 mt-3 pt-2" style="border-top: 1px dashed var(--line);">
+                                {% if req.status == 'Pickup Assigned' %}
+                                    <form action="{{ url_for('delivery_update_status', request_id=req.request_id) }}" method="POST">
+                                        <input type="hidden" name="status" value="Picked Up">
+                                        <button type="submit" class="btn btn-sm" style="background: var(--moss); color: #fff; font-weight: 700; font-size: .8rem;">
+                                            ✓ Confirm Device Picked Up
+                                        </button>
+                                    </form>
+                                {% elif req.status == 'Out for Delivery' %}
+                                    <form action="{{ url_for('delivery_update_status', request_id=req.request_id) }}" method="POST">
+                                        <input type="hidden" name="status" value="Delivered">
+                                        <button type="submit" class="btn btn-sm btn-success" style="font-weight: 700; font-size: .8rem;">
+                                            ✓ Confirm Delivered to Customer
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span style="font-size: .78rem; color: var(--muted); font-style: italic;">
+                                        Status: {{ req.status }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <span class="empty-mark" aria-hidden="true">GO</span>
+                    <h3>No assigned stops to show</h3>
+                    <p>Pickups and deliveries assigned to your account by the admin will appear in this queue.</p>
+                </div>
+            {% endif %}
         </section>
+
         <aside class="workspace-panel" aria-labelledby="delivery-profile-title">
             <div class="workspace-panel-head">
                 <h2 id="delivery-profile-title">Partner profile</h2>
@@ -31,10 +143,12 @@
             <div class="side-panel-content">
                 <div class="info-row"><span>Partner</span><span>{{ session.get('name', 'Delivery Partner') }}</span></div>
                 <div class="info-row"><span>Workspace</span><span>Delivery</span></div>
-                <div class="info-row"><span>Route status</span><span>Awaiting assignments</span></div>
+                <div class="info-row">
+                    <span>Route status</span>
+                    <span>{% if assigned_requests and assigned_requests|length > 0 %}{{ assigned_requests|length }} active stops{% else %}Awaiting assignments{% endif %}</span>
+                </div>
             </div>
         </aside>
     </div>
 </section>
 {% endblock %}
-

@@ -344,24 +344,135 @@ def customer_dashboard():
 def admin_dashboard():
     total_requests = 0
     pending_requests = 0
+    assigned_requests = 0
+    in_repair_requests = 0
+    delivered_requests = 0
+    requests_list = []
+    delivery_boys = []
+    user_map = {}
+    delivery_map = {}
+
     try:
-        res = supabase.table("requests").select("status").execute()
-        all_reqs = res.data or []
-        total_requests = len(all_reqs)
-        pending_requests = sum(1 for r in all_reqs if r.get("status") == "Pickup Pending")
-    except Exception:
-        pass
+        # 1. Fetch all requests
+        res = supabase.table("requests").select("*").order("created_at", desc=True).execute()
+        requests_list = res.data or []
+        total_requests = len(requests_list)
+        pending_requests = sum(1 for r in requests_list if r.get("status") == "Pickup Pending")
+        assigned_requests = sum(1 for r in requests_list if r.get("status") == "Pickup Assigned")
+        in_repair_requests = sum(
+            1 for r in requests_list if r.get("status") in ("Picked Up", "Under Inspection", "Repair in Progress", "Repaired")
+        )
+        delivered_requests = sum(1 for r in requests_list if r.get("status") == "Delivered")
+
+        # 2. Fetch delivery agents
+        db_res = (
+            supabase.table("users")
+            .select("user_id, name, mobile, email, address, profile_data")
+            .eq("role", "delivery")
+            .order("name")
+            .execute()
+        )
+        delivery_boys = db_res.data or []
+        delivery_map = {db["user_id"]: db for db in delivery_boys}
+
+        # 3. Fetch customer info for addresses and contacts
+        user_ids = list({r["user_id"] for r in requests_list if r.get("user_id")})
+        if user_ids:
+            u_res = (
+                supabase.table("users")
+                .select("user_id, name, mobile, address, email")
+                .in_("user_id", user_ids)
+                .execute()
+            )
+            user_map = {u["user_id"]: u for u in (u_res.data or [])}
+    except Exception as e:
+        flash(
+            f"Could not load operations data: {e}",
+            "warning",
+        )
+
+    # Attach pickup estimate for each request
+    for r in requests_list:
+        r["pickup_estimate"] = calculate_pickup_estimate(r.get("created_at"))
+
     return render_template(
         "admin_dashboard.html",
         total_requests=total_requests,
         pending_requests=pending_requests,
+        assigned_requests=assigned_requests,
+        in_repair_requests=in_repair_requests,
+        delivered_requests=delivered_requests,
+        requests=requests_list,
+        delivery_boys=delivery_boys,
+        delivery_map=delivery_map,
+        user_map=user_map,
+        all_statuses=REQUEST_STATUSES,
     )
 
 
 @app.route("/delivery/dashboard")
 @role_required("delivery")
 def delivery_dashboard():
-    return render_template("delivery_dashboard.html")
+    assigned_requests = []
+    user_map = {}
+    try:
+        res = (
+            supabase.table("requests")
+            .select("*")
+            .eq("delivery_boy_id", session["user_id"])
+            .order("created_at", desc=True)
+            .execute()
+        )
+        assigned_requests = res.data or []
+        user_ids = list({r["user_id"] for r in assigned_requests if r.get("user_id")})
+        if user_ids:
+            u_res = (
+                supabase.table("users")
+                .select("user_id, name, mobile, address, email")
+                .in_("user_id", user_ids)
+                .execute()
+            )
+            user_map = {u["user_id"]: u for u in (u_res.data or [])}
+    except Exception:
+        assigned_requests = []
+
+    for r in assigned_requests:
+        r["pickup_estimate"] = calculate_pickup_estimate(r.get("created_at"))
+
+    return render_template(
+        "delivery_dashboard.html",
+        assigned_requests=assigned_requests,
+        user_map=user_map,
+    )
+
+
+@app.route("/delivery/requests/<request_id>/status", methods=["POST"])
+@role_required("delivery")
+def delivery_update_status(request_id):
+    """Allow assigned delivery boy to mark request as Picked Up or Delivered."""
+    new_status = request.form.get("status", "").strip()
+    allowed_delivery_statuses = {"Picked Up", "Out for Delivery", "Delivered"}
+    if new_status not in allowed_delivery_statuses:
+        flash("Invalid status update for delivery partner.", "danger")
+        return redirect(url_for("delivery_dashboard"))
+    try:
+        chk = (
+            supabase.table("requests")
+            .select("request_id")
+            .eq("request_id", request_id)
+            .eq("delivery_boy_id", session["user_id"])
+            .execute()
+        )
+        if not chk.data:
+            flash("You are not assigned to this request.", "danger")
+            return redirect(url_for("delivery_dashboard"))
+
+        supabase.table("requests").update({"status": new_status}).eq("request_id", request_id).execute()
+        flash(f"Request #{request_id[:8].upper()} marked as '{new_status}'.", "success")
+    except Exception as e:
+        flash(f"Failed to update status: {e}", "danger")
+
+    return redirect(url_for("delivery_dashboard"))
 
 
 @app.route("/shop/dashboard")
@@ -574,9 +685,19 @@ def admin_requests():
 
 
 @app.route("/admin/requests/<request_id>/update", methods=["POST"])
+@app.route("/admin/assign-pickup", methods=["POST"])
 @role_required("admin")
-def admin_update_request(request_id):
+def admin_update_request(request_id=None):
     """Update assigned delivery boy and/or status for a request."""
+    if not request_id:
+        request_id = request.form.get("request_id", "").strip()
+
+    next_url = request.form.get("next") or request.referrer or url_for("admin_requests")
+
+    if not request_id:
+        flash("Request ID is missing.", "danger")
+        return redirect(next_url)
+
     delivery_boy_id = request.form.get("delivery_boy_id", "").strip() or None
     new_status = request.form.get("status", "").strip()
 
@@ -584,31 +705,45 @@ def admin_update_request(request_id):
     if new_status:
         if new_status not in REQUEST_STATUSES:
             flash(f"Invalid status '{new_status}'.", "danger")
-            return redirect(url_for("admin_requests"))
+            return redirect(next_url)
         updates["status"] = new_status
 
+    agent_name = None
     if delivery_boy_id:
         db_check = (
             supabase.table("users")
-            .select("user_id")
+            .select("user_id, name")
             .eq("user_id", delivery_boy_id)
             .eq("role", "delivery")
             .execute()
         )
         if not db_check.data:
             flash("Selected delivery person not found.", "danger")
-            return redirect(url_for("admin_requests"))
+            return redirect(next_url)
         updates["delivery_boy_id"] = delivery_boy_id
+        agent_name = db_check.data[0].get("name")
+
+        # Auto-advance from 'Pickup Pending' to 'Pickup Assigned' if status was not explicitly changed
+        if not new_status:
+            try:
+                curr = supabase.table("requests").select("status").eq("request_id", request_id).execute()
+                if curr.data and curr.data[0].get("status") == "Pickup Pending":
+                    updates["status"] = "Pickup Assigned"
+            except Exception:
+                pass
     else:
         updates["delivery_boy_id"] = None
 
     try:
         supabase.table("requests").update(updates).eq("request_id", request_id).execute()
-        flash(f"Request #{request_id[:8].upper()} updated successfully.", "success")
+        if delivery_boy_id and agent_name:
+            flash(f"Assigned {agent_name} to Request #{request_id[:8].upper()}.", "success")
+        else:
+            flash(f"Request #{request_id[:8].upper()} updated successfully.", "success")
     except Exception as e:
         flash(f"Failed to update request: {e}", "danger")
 
-    return redirect(url_for("admin_requests"))
+    return redirect(next_url)
 
 
 # ---------------------------------------------------------------------------

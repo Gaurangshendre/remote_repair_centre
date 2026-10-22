@@ -406,6 +406,102 @@ class TestRequestsWorkflow(unittest.TestCase):
             self.assertEqual(updated_calls[0]["status"], "Repair in Progress")
             self.assertEqual(updated_calls[0]["delivery_boy_id"], delivery_uuid)
 
+    def test_admin_dashboard_pickup_assignment_view(self):
+        """Admin dashboard renders pickup assignment controls and delivery agents."""
+        admin_uuid = str(uuid.uuid4())
+        delivery_uuid = str(uuid.uuid4())
+        cust_uuid = str(uuid.uuid4())
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = admin_uuid
+            sess["role"] = "admin"
+            sess["name"] = "Operations Admin"
+
+        mock_reqs = [
+            {
+                "request_id": str(uuid.uuid4()),
+                "user_id": cust_uuid,
+                "company": "Apple",
+                "model": "iPhone 13",
+                "request_type": "Repair",
+                "part": "Screen / Display",
+                "issue_description": "Cracked screen after drop.",
+                "status": "Pickup Pending",
+                "delivery_boy_id": None,
+                "created_at": "2026-10-20T10:00:00Z",
+            }
+        ]
+        mock_delivery_boys = [
+            {"user_id": delivery_uuid, "name": "Courier One", "mobile": "9998887771", "profile_data": {"service_area": "North Zone"}}
+        ]
+        mock_customers = [
+            {"user_id": cust_uuid, "name": "Alice Customer", "mobile": "9887776665", "address": "45 Blossom Ave", "email": "alice@test.com"}
+        ]
+
+        with patch.object(flask_app.supabase, "table") as mock_table:
+            def table_side_effect(name):
+                t = MagicMock()
+                if name == "requests":
+                    t.select.return_value.order.return_value.execute.return_value.data = mock_reqs
+                elif name == "users":
+                    t.select.return_value.eq.return_value.order.return_value.execute.return_value.data = mock_delivery_boys
+                    t.select.return_value.in_.return_value.execute.return_value.data = mock_customers
+                return t
+
+            mock_table.side_effect = table_side_effect
+
+            resp = self.client.get("/admin/dashboard")
+            self.assertEqual(resp.status_code, 200)
+            html = resp.get_data(as_text=True)
+            self.assertIn("Doorstep Pickups &amp; Delivery Assignment", html)
+            self.assertIn("iPhone 13", html)
+            self.assertIn("Alice Customer", html)
+            self.assertIn("Courier One", html)
+            self.assertIn("Assign Delivery Agent", html)
+
+    def test_admin_dashboard_assign_delivery_agent(self):
+        """Assigning delivery agent via admin dashboard updates request and redirects to dashboard."""
+        admin_uuid = str(uuid.uuid4())
+        delivery_uuid = str(uuid.uuid4())
+        req_id = str(uuid.uuid4())
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = admin_uuid
+            sess["role"] = "admin"
+            sess["name"] = "Operations Admin"
+
+        updated_calls = []
+
+        with patch.object(flask_app.supabase, "table") as mock_table:
+            def update_side_effect(name):
+                t = MagicMock()
+                if name == "users":
+                    t.select.return_value.eq.return_value.eq.return_value.execute.return_value.data = [{"user_id": delivery_uuid, "name": "Courier One"}]
+                elif name == "requests":
+                    t.select.return_value.eq.return_value.execute.return_value.data = [{"status": "Pickup Pending"}]
+                    def mock_update(payload):
+                        updated_calls.append(payload)
+                        mock_eq = MagicMock()
+                        mock_eq.execute.return_value = MagicMock(data=[payload])
+                        return MagicMock(eq=MagicMock(return_value=mock_eq))
+                    t.update.side_effect = mock_update
+                return t
+
+            mock_table.side_effect = update_side_effect
+
+            update_resp = self.client.post(f"/admin/requests/{req_id}/update", data={
+                "delivery_boy_id": delivery_uuid,
+                "status": "Pickup Assigned",
+                "next": "/admin/dashboard",
+            }, follow_redirects=False)
+
+            self.assertEqual(update_resp.status_code, 302)
+            self.assertIn("/admin/dashboard", update_resp.headers["Location"])
+            self.assertEqual(len(updated_calls), 1)
+            self.assertEqual(updated_calls[0]["delivery_boy_id"], delivery_uuid)
+            self.assertEqual(updated_calls[0]["status"], "Pickup Assigned")
+
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -1,72 +1,655 @@
 {% extends "base.html" %}
-{% block title %}Admin Dashboard – Remote Repair Centre{% endblock %}
+{% block title %}Admin Operations Dashboard – Remote Repair Centre{% endblock %}
 
 {% block content %}
 <style>
-    .workspace-tile-link {
-        text-decoration: none;
-        color: inherit;
-        display: block;
-        transition: transform .12s ease, box-shadow .12s ease;
+    .admin-dash-page {
+        max-width: 1320px;
+        margin: 1.5rem auto 4rem;
+        padding: 0 .5rem;
     }
-    .workspace-tile-link:hover .workspace-tile {
-        border-color: var(--moss);
-        box-shadow: 0 6px 18px rgba(47, 107, 91, .12);
+    .dash-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+    .dash-header h1 {
+        margin: 0;
+        font-family: "Manrope", sans-serif;
+        font-size: clamp(1.6rem, 3vw, 2.2rem);
+        font-weight: 800;
+        color: var(--forest);
+    }
+    .dash-header p {
+        margin: .35rem 0 0;
+        color: var(--muted);
+        font-size: .92rem;
+    }
+
+    /* KPI Metrics Grid */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 1.1rem;
+        margin-bottom: 2rem;
+    }
+    .kpi-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 1.2rem 1.35rem;
+        box-shadow: 0 4px 14px rgba(24, 48, 42, .04);
+        position: relative;
+        overflow: hidden;
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .kpi-card:hover {
         transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(24, 48, 42, .07);
+    }
+    .kpi-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--kpi-color, var(--moss));
+    }
+    .kpi-label {
+        font-size: .74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--muted);
+        display: block;
+    }
+    .kpi-value {
+        font-family: "Manrope", sans-serif;
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: var(--kpi-val-color, var(--ink));
+        margin-top: .3rem;
+        display: block;
+        line-height: 1.1;
+    }
+    .kpi-sub {
+        font-size: .76rem;
+        color: #7a8e87;
+        margin-top: .4rem;
+        display: block;
+    }
+
+    /* Main Operations Layout */
+    .ops-layout {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 1.5rem;
+        align-items: start;
+    }
+    @media (max-width: 1024px) {
+        .ops-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Panels */
+    .ops-panel {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 6px 20px rgba(24, 48, 42, .04);
+        overflow: hidden;
+    }
+    .ops-panel-head {
+        padding: 1.15rem 1.4rem;
+        border-bottom: 1px solid var(--line);
+        background: #fafdfc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .75rem;
+    }
+    .ops-panel-head h2 {
+        font-family: "Manrope", sans-serif;
+        font-size: 1.12rem;
+        font-weight: 800;
+        color: var(--forest);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+    .ops-panel-head p {
+        font-size: .82rem;
+        color: var(--muted);
+        margin: .2rem 0 0;
+    }
+
+    /* Tabs */
+    .filter-tabs {
+        display: flex;
+        gap: .4rem;
+    }
+    .filter-tab {
+        font-size: .78rem;
+        font-weight: 700;
+        padding: .35rem .75rem;
+        border-radius: 4px;
+        text-decoration: none;
+        border: 1px solid transparent;
+        cursor: pointer;
+        background: #f0f4f2;
+        color: var(--muted);
+        transition: all .15s ease;
+    }
+    .filter-tab:hover {
+        background: #e2ece8;
+        color: var(--forest);
+    }
+    .filter-tab.active {
+        background: var(--moss);
+        color: #fff;
+        border-color: var(--moss);
+    }
+
+    /* Custom Table */
+    .ops-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: collapse;
+    }
+    .ops-table th {
+        background: #f8faf9;
+        color: #4b625b;
+        font-size: .73rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        padding: .95rem 1.1rem;
+        border-bottom: 1px solid var(--line);
+        white-space: nowrap;
+    }
+    .ops-table td {
+        padding: 1rem 1.1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #edf1ee;
+        font-size: .86rem;
+    }
+    .ops-table tr:hover td {
+        background: #fafcfb;
+    }
+
+    /* Badges & Pills */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .28rem .65rem;
+        border-radius: 4px;
+        font-size: .73rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .status-badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    .status-pickup-pending { background: #fef7ec; color: #b26a15; border: 1px solid #f6deb6; }
+    .status-pickup-assigned { background: #eff6ff; color: #1e62d0; border: 1px solid #bfdbfe; }
+    .status-picked-up { background: #f3f0ff; color: #6941c6; border: 1px solid #ddd6fe; }
+    .status-under-inspection { background: #ecfeff; color: #088ab2; border: 1px solid #a5f3fc; }
+    .status-repair-in-progress { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-repaired { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .status-out-for-delivery { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+    .status-delivered { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+    .status-cancelled { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .status-default { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+
+    .req-type-pill {
+        display: inline-block;
+        padding: .18rem .45rem;
+        border-radius: 3px;
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .req-type-repair { background: #e6f4ea; color: #137333; }
+    .req-type-resell { background: #fce8e6; color: #c5221f; }
+
+    /* Assignment Control Box */
+    .assign-box {
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+        min-width: 260px;
+    }
+    .assign-select {
+        font-size: .82rem;
+        min-height: 35px;
+        padding: .25rem .6rem;
+        border-radius: 4px;
+        border: 1px solid var(--line);
+        background-color: #fff;
+    }
+    .assign-select:focus {
+        border-color: var(--moss);
+        box-shadow: 0 0 0 .15rem rgba(47, 107, 91, .15);
+    }
+    .btn-assign {
+        font-size: .8rem;
+        font-weight: 700;
+        padding: .35rem .75rem;
+        border-radius: 4px;
+        background: var(--moss);
+        border: none;
+        color: #fff;
+        transition: background .15s ease, transform .1s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .35rem;
+    }
+    .btn-assign:hover {
+        background: var(--forest);
+        color: #fff;
+        transform: translateY(-1px);
+    }
+    .assigned-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        background: #f0f7f4;
+        border: 1px solid #cce3dc;
+        padding: .25rem .55rem;
+        border-radius: 4px;
+        font-size: .76rem;
+        font-weight: 600;
+        color: var(--forest);
+    }
+
+    /* Customer details box */
+    .cust-detail-box {
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+    }
+    .cust-detail-box .name {
+        font-weight: 700;
+        color: var(--ink);
+        font-size: .88rem;
+    }
+    .cust-detail-box .phone {
+        font-size: .78rem;
+        color: #3b5a50;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+    }
+    .cust-detail-box .phone:hover {
+        text-decoration: underline;
+    }
+    .cust-detail-box .address {
+        font-size: .76rem;
+        color: #5c7069;
+        line-height: 1.35;
+        max-width: 220px;
+        margin-top: .1rem;
+    }
+
+    /* Roster Panel */
+    .roster-card {
+        padding: 1.15rem 1.25rem;
+        border-bottom: 1px solid #edf1ee;
+        transition: background .15s ease;
+    }
+    .roster-card:last-child {
+        border-bottom: none;
+    }
+    .roster-card:hover {
+        background: #fafdfc;
+    }
+    .roster-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: .25rem;
+    }
+    .roster-name {
+        font-size: .88rem;
+        font-weight: 700;
+        color: var(--ink);
+    }
+    .roster-meta {
+        font-size: .78rem;
+        color: var(--muted);
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+    }
+    .roster-badge {
+        font-size: .7rem;
+        font-weight: 700;
+        padding: .15rem .45rem;
+        border-radius: 3px;
+        background: #eef5f2;
+        color: var(--moss);
     }
 </style>
 
-<section class="dashboard-page" style="--role-accent: #b98a42;">
-    <header class="dashboard-heading">
+<section class="admin-dash-page">
+    <!-- Header -->
+    <header class="dash-header">
         <div>
-            <p class="eyebrow">CENTRE OPERATIONS</p>
-            <h1>Operations overview</h1>
-            <p>Welcome, {{ session.get('name', 'Admin') }}. Your centre workspace is ready.</p>
+            <p class="eyebrow" style="color: #b98a42; font-weight: 700; letter-spacing: .08em; font-size: .78rem; margin-bottom: .25rem;">
+                CENTRE OPERATIONS COMMAND
+            </p>
+            <h1>Admin Dashboard</h1>
+            <p>Welcome back, {{ session.get('name', 'Admin') }}. Oversee doorstep logistics and assign delivery partners.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <a href="{{ url_for('admin_requests') }}" class="btn btn-sm" style="background: var(--moss); color: #fff; font-weight: 700; padding: .45rem .9rem;">
-                Manage Requests
+            <a href="{{ url_for('admin_requests') }}" class="btn btn-outline-secondary btn-sm" style="font-weight: 600; padding: .45rem .85rem;">
+                Full Request Archive
             </a>
-            <span class="dashboard-role">Administrator</span>
+            <span class="badge" style="background: #b98a42; color: #fff; padding: .5rem .75rem; font-size: .78rem; font-weight: 700;">
+                Administrator
+            </span>
         </div>
     </header>
 
-    <section class="workspace-panel" aria-labelledby="admin-queue-title">
-        <div class="workspace-panel-head">
-            <h2 id="admin-queue-title">Centre activity</h2>
-            <span class="panel-index">01 / OVERVIEW</span>
+    <!-- KPI Metrics -->
+    <div class="kpi-grid">
+        <div class="kpi-card" style="--kpi-color: #b26a15; --kpi-val-color: #b26a15;">
+            <span class="kpi-label">Pickups Pending</span>
+            <span class="kpi-value" id="kpi-pending-pickups">{{ pending_requests }}</span>
+            <span class="kpi-sub">⚠️ Awaiting delivery agent assignment</span>
         </div>
-        <div class="side-panel-content">
-            <div class="workspace-list" style="margin-top: 0;">
-                <article class="workspace-tile">
-                    <span>People</span>
-                    <h3>User directory</h3>
-                    <p>Registered customer, shop, and delivery accounts.</p>
-                </article>
+        <div class="kpi-card" style="--kpi-color: #1e62d0; --kpi-val-color: #1e62d0;">
+            <span class="kpi-label">Pickups Assigned</span>
+            <span class="kpi-value">{{ assigned_requests }}</span>
+            <span class="kpi-sub">Dispatched to delivery fleet</span>
+        </div>
+        <div class="kpi-card" style="--kpi-color: #15803d; --kpi-val-color: #15803d;">
+            <span class="kpi-label">In Service / Active</span>
+            <span class="kpi-value">{{ in_repair_requests }}</span>
+            <span class="kpi-sub">Inspecting or repairing in shop</span>
+        </div>
+        <div class="kpi-card" style="--kpi-color: var(--moss); --kpi-val-color: var(--forest);">
+            <span class="kpi-label">Total Inquiries</span>
+            <span class="kpi-value">{{ total_requests }}</span>
+            <span class="kpi-sub">Lifetime repair & resell requests</span>
+        </div>
+        <div class="kpi-card" style="--kpi-color: #6941c6; --kpi-val-color: #6941c6;">
+            <span class="kpi-label">Delivery Agents</span>
+            <span class="kpi-value">{{ delivery_boys|length }}</span>
+            <span class="kpi-sub">Active fleet partners ready</span>
+        </div>
+    </div>
 
-                <a href="{{ url_for('admin_requests') }}" class="workspace-tile-link">
-                    <article class="workspace-tile" style="border-left: 3px solid var(--moss); background: #fdfefe;">
-                        <span style="color: var(--moss);">Service & Logistics</span>
-                        <h3 style="color: var(--forest);">Repair Queue &rarr;</h3>
-                        <p>
-                            {% if total_requests is defined %}
-                                <strong>{{ total_requests }}</strong> total requests &bull;
-                                <span style="color: #b26a15; font-weight: 700;">{{ pending_requests }} pending pickup</span>.
-                            {% else %}
-                                View and assign delivery agents to customer repair and resell requests.
-                            {% endif %}
-                        </p>
-                    </article>
-                </a>
-
-                <article class="workspace-tile">
-                    <span>Centre</span>
-                    <h3>System settings</h3>
-                    <p>Configuration for centre operations.</p>
-                </article>
+    <!-- Main Ops Layout -->
+    <div class="ops-layout">
+        <!-- Main: Pickups & Delivery Agent Assignment Table -->
+        <div class="ops-panel" id="pickups-section">
+            <div class="ops-panel-head">
+                <div>
+                    <h2>
+                        <span>🚚</span> Doorstep Pickups &amp; Delivery Assignment
+                    </h2>
+                    <p>Assign registered delivery agents to pending customer pickups.</p>
+                </div>
+                <div class="filter-tabs" role="tablist">
+                    <button class="filter-tab active" onclick="filterPickupTable('all', this)">
+                        All Pickups ({{ requests|length }})
+                    </button>
+                    <button class="filter-tab" onclick="filterPickupTable('pending', this)">
+                        Needs Agent ({{ pending_requests }})
+                    </button>
+                    <button class="filter-tab" onclick="filterPickupTable('assigned', this)">
+                        Assigned ({{ assigned_requests }})
+                    </button>
+                </div>
             </div>
+
+            {% if requests and requests|length > 0 %}
+            <div class="table-responsive">
+                <table class="ops-table" id="pickups-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Customer &amp; Pickup Address</th>
+                            <th>Device &amp; Issue</th>
+                            <th>Status</th>
+                            <th style="min-width: 280px;">Assign Delivery Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        {% set cust = user_map.get(req.user_id) %}
+                        {% set is_pending = (req.status == 'Pickup Pending') %}
+                        {% set is_assigned = (req.status == 'Pickup Assigned') %}
+                        {% set assigned_agent = delivery_map.get(req.delivery_boy_id) %}
+                        <tr class="pickup-row" data-status="{% if is_pending %}pending{% elif is_assigned %}assigned{% else %}other{% endif %}">
+                            <!-- Request ID & Date -->
+                            <td>
+                                <strong style="font-family: monospace; font-size: .86rem; color: var(--forest); display: block;">
+                                    #{{ req.request_id[:8]|upper }}
+                                </strong>
+                                <small style="color: var(--muted); font-size: .76rem; display: block; margin-top: .15rem;">
+                                    {{ req.created_at[:10] if req.created_at else '' }}
+                                </small>
+                                <div class="mt-1">
+                                    <span class="req-type-pill {% if req.request_type == 'Repair' %}req-type-repair{% else %}req-type-resell{% endif %}">
+                                        {{ req.request_type }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            <!-- Customer & Pickup Address -->
+                            <td>
+                                <div class="cust-detail-box">
+                                    {% if cust %}
+                                        <span class="name">{{ cust.name }}</span>
+                                        <a href="tel:{{ cust.mobile }}" class="phone" title="Call customer">
+                                            📞 {{ cust.mobile }}
+                                        </a>
+                                        <div class="address" title="{{ cust.address }}">
+                                            📍 {{ cust.address }}
+                                        </div>
+                                    {% else %}
+                                        <span style="color: #94a39e; font-style: italic;">Customer ID: {{ req.user_id[:8] }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Device & Part Issue -->
+                            <td style="max-width: 240px;">
+                                <div style="font-weight: 700; color: var(--ink);">{{ req.company }} {{ req.model }}</div>
+                                <div style="font-size: .8rem; font-weight: 600; color: var(--forest); margin-top: .1rem;">
+                                    🔧 {{ req.part }}
+                                </div>
+                                {% set has_photo = "[Photo: " in req.issue_description %}
+                                {% set clean_desc = req.issue_description.split("[Photo: ")[0].strip() if has_photo else req.issue_description %}
+                                <div style="color: #5c7069; font-size: .78rem; line-height: 1.35; margin-top: .2rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="{{ clean_desc }}">
+                                    {{ clean_desc }}
+                                </div>
+                                {% if has_photo %}
+                                    {% set photo_url = req.issue_description.split("[Photo: ")[1].split("]")[0] %}
+                                    <div class="mt-1">
+                                        <a href="{{ photo_url }}" target="_blank" rel="noopener noreferrer" class="badge text-decoration-none" style="background: #e6f4ea; color: #137333; font-size: .72rem; padding: .2rem .4rem; border: 1px solid #cce3dc;">
+                                            📸 View Photo
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Status Badge -->
+                            <td>
+                                {% set slug = req.status|lower|replace(' ', '-') %}
+                                {% if slug == 'pickup-pending' %}
+                                    <span class="status-badge status-pickup-pending">{{ req.status }}</span>
+                                {% elif slug == 'pickup-assigned' %}
+                                    <span class="status-badge status-pickup-assigned">{{ req.status }}</span>
+                                {% elif slug == 'picked-up' %}
+                                    <span class="status-badge status-picked-up">{{ req.status }}</span>
+                                {% elif slug == 'under-inspection' %}
+                                    <span class="status-badge status-under-inspection">{{ req.status }}</span>
+                                {% elif slug == 'repair-in-progress' %}
+                                    <span class="status-badge status-repair-in-progress">{{ req.status }}</span>
+                                {% elif slug == 'repaired' %}
+                                    <span class="status-badge status-repaired">{{ req.status }}</span>
+                                {% elif slug == 'out-for-delivery' %}
+                                    <span class="status-badge status-out-for-delivery">{{ req.status }}</span>
+                                {% elif slug == 'delivered' %}
+                                    <span class="status-badge status-delivered">{{ req.status }}</span>
+                                {% elif slug == 'cancelled' %}
+                                    <span class="status-badge status-cancelled">{{ req.status }}</span>
+                                {% else %}
+                                    <span class="status-badge status-default">{{ req.status }}</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Delivery Agent Assignment Form -->
+                            <td>
+                                <form action="{{ url_for('admin_update_request', request_id=req.request_id) }}" method="POST" class="assign-box">
+                                    <input type="hidden" name="next" value="{{ url_for('admin_dashboard') }}">
+                                    
+                                    {% if assigned_agent %}
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="assigned-chip" title="Currently assigned agent">
+                                            🚴 {{ assigned_agent.name }}
+                                        </span>
+                                        <small style="color: var(--muted); font-size: .72rem;">Reassign agent below</small>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="d-flex gap-1 align-items-center">
+                                        <label for="agent-{{ req.request_id }}" class="visually-hidden">Assign Delivery Agent</label>
+                                        <select id="agent-{{ req.request_id }}" name="delivery_boy_id" class="form-select assign-select" required>
+                                            <option value="" {% if not req.delivery_boy_id %}selected{% endif %}>
+                                                -- Select Delivery Agent --
+                                            </option>
+                                            {% for db in delivery_boys %}
+                                                {% set pdata = db.profile_data if db.profile_data is mapping else {} %}
+                                                {% set area = pdata.get('service_area', '') %}
+                                                {% set vtype = pdata.get('vehicle_type', '') %}
+                                                <option value="{{ db.user_id }}" {% if req.delivery_boy_id == db.user_id %}selected{% endif %}>
+                                                    🚴 {{ db.name }} ({{ db.mobile }}){% if area %} • {{ area }}{% endif %}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+                                        <!-- Optional status selector: defaults to Pickup Assigned if pending -->
+                                        <select name="status" class="form-select assign-select" style="font-size: .78rem; min-height: 32px; padding: .2rem .5rem;" title="Optional status update">
+                                            {% for s in all_statuses %}
+                                                <option value="{{ s }}" {% if (is_pending and s == 'Pickup Assigned') or (not is_pending and req.status == s) %}selected{% endif %}>
+                                                    {{ s }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+
+                                        <button type="submit" class="btn btn-assign" style="min-height: 32px; padding: .2rem .75rem;">
+                                            <span>Assign</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-5 text-center">
+                <span style="font-size: 2.6rem; display: block; margin-bottom: .75rem;">📦</span>
+                <h3 style="font-family: 'Manrope', sans-serif; font-size: 1.15rem; font-weight: 800;">No Requests Recorded</h3>
+                <p style="color: var(--muted); font-size: .88rem; margin: 0;">
+                    Customer requests will appear here for pickup assignment.
+                </p>
+            </div>
+            {% endif %}
         </div>
-    </section>
-    <p class="workspace-note">Operational tools will appear here as the centre workflows are connected.</p>
+
+        <!-- Sidebar: Active Delivery Fleet Roster -->
+        <aside class="ops-panel">
+            <div class="ops-panel-head">
+                <div>
+                    <h2><span>🚴</span> Delivery Fleet ({{ delivery_boys|length }})</h2>
+                    <p>Registered delivery partners available for assignment.</p>
+                </div>
+            </div>
+
+            {% if delivery_boys and delivery_boys|length > 0 %}
+                <div>
+                    {% for db in delivery_boys %}
+                        {% set pdata = db.profile_data if db.profile_data is mapping else {} %}
+                        {% set area = pdata.get('service_area', db.address) %}
+                        {% set vtype = pdata.get('vehicle_type', 'Vehicle') %}
+                        {% set vnum = pdata.get('vehicle_number', '') %}
+                        {% set active_assigned_count = requests|selectattr('delivery_boy_id', 'equalto', db.user_id)|list|length %}
+                        <div class="roster-card">
+                            <div class="roster-head">
+                                <span class="roster-name">🚴 {{ db.name }}</span>
+                                <span class="roster-badge" title="Active assigned pickups">
+                                    {{ active_assigned_count }} assigned
+                                </span>
+                            </div>
+                            <div class="roster-meta">
+                                <div>📞 <a href="tel:{{ db.mobile }}" style="color: inherit; text-decoration: none;">{{ db.mobile }}</a></div>
+                                {% if area %}
+                                    <div>📍 {{ area }}</div>
+                                {% endif %}
+                                {% if vtype %}
+                                    <div style="font-size: .74rem; color: #70847e;">
+                                        🛵 {{ vtype|title }}{% if vnum %} ({{ vnum }}){% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="p-4 text-center">
+                    <p style="color: var(--muted); font-size: .85rem; margin: 0;">
+                        No delivery partners registered yet.
+                    </p>
+                    <small style="color: #8fa09a; font-size: .78rem; display: block; margin-top: .4rem;">
+                        Run <code>python seed_users.py</code> or register accounts with role 'delivery'.
+                    </small>
+                </div>
+            {% endif %}
+        </aside>
+    </div>
 </section>
+
+<script>
+    function filterPickupTable(filter, button) {
+        // Toggle active button
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        button.classList.add('active');
+
+        // Filter rows
+        const rows = document.querySelectorAll('.pickup-row');
+        rows.forEach(row => {
+            const statusType = row.getAttribute('data-status');
+            if (filter === 'all') {
+                row.style.display = '';
+            } else if (filter === 'pending') {
+                row.style.display = (statusType === 'pending') ? '' : 'none';
+            } else if (filter === 'assigned') {
+                row.style.display = (statusType === 'assigned') ? '' : 'none';
+            }
+        });
+    }
+</script>
 {% endblock %}
